@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Delivery App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial; text-align: center; padding: 50px;">
+  <h1>🛵 Delivery App</h1>
+  <p>Welcome to my delivery website!</p>
+  <button onclick="checkServer()" style="padding: 10px 20px; font-size: 16px;">Test Server Connection</button>
+  <p id="result" style="color: green; font-weight: bold;"></p>
+
+  <script>
+    async function checkServer() {
+      try {
+        const response = await fetch('/');
+        const text = await response.text();
+        document.getElementById('result').innerText = "✅ Connected: " + text;
+      } catch (error) {
+        document.getElementById('result').innerText = "❌ Error connecting to server";
+      }
+    }
+  </script>
+</body>
+</html>
