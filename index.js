@@ -27,7 +27,7 @@ const orderSchema = new mongoose.Schema({
     quantity: Number,
     locationPin: String,
     deliveryFee: Number,
-    status: { type: String, default: 'Pending' }, // Pending, Paid, Failed
+    status: { type: String, default: 'Pending' },
     mpesaReceipt: String,
     checkoutRequestID: String,
     createdAt: { type: Date, default: Date.now }
@@ -51,7 +51,7 @@ app.post('/api/pay', async (req, res) => {
     try {
         const { phone, amount, orderDetails } = req.body;
         
-        // 1. Save the order to the database FIRST
+        // 1. Save order to database
         const newOrder = new Order({
             hostel: orderDetails.hostel,
             room: orderDetails.room,
@@ -98,7 +98,6 @@ app.post('/api/pay', async (req, res) => {
             headers: { Authorization: `Bearer ${token}` }
         });
 
-        // 3. Save the CheckoutRequestID to the order so we can match the callback later
         newOrder.checkoutRequestID = response.data.CheckoutRequestID;
         await newOrder.save();
 
@@ -109,27 +108,21 @@ app.post('/api/pay', async (req, res) => {
     }
 });
 
-// Callback endpoint for M-Pesa results
 app.post('/api/callback', async (req, res) => {
     console.log("M-Pesa Callback Received:", JSON.stringify(req.body, null, 2));
-    
     try {
         const callbackData = req.body.Body.stkCallback;
         const checkoutRequestID = callbackData.CheckoutRequestID;
         const resultCode = callbackData.ResultCode;
         
         if (resultCode === 0) {
-            // Payment successful
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
-            
-            // Update the order in the database
             await Order.findOneAndUpdate(
                 { checkoutRequestID: checkoutRequestID },
                 { status: 'Paid', mpesaReceipt: mpesaReceipt }
             );
             console.log("✅ Order marked as PAID in database.");
         } else {
-            // Payment failed
             await Order.findOneAndUpdate(
                 { checkoutRequestID: checkoutRequestID },
                 { status: 'Failed' }
@@ -139,7 +132,6 @@ app.post('/api/callback', async (req, res) => {
     } catch (error) {
         console.error("Error updating order in callback:", error.message);
     }
-
     res.json({ ResultCode: 0, ResultDesc: "Success" });
 });
 
