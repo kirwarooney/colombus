@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Columbus Delivery - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 15px; background-color: #f4f4f9; color: #333; }
+    .header { background-color: #0d2b45; color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; border-radius: 8px; margin-bottom: 15px; }
+    .order-card { background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #f39c12; }
+    .order-card.paid { border-left: 5px solid #27ae60; }
+    .order-card.failed { border-left: 5px solid #e74c3c; }
+    .row { margin-bottom: 5px; font-size: 14px; }
+    .label { font-weight: bold; color: #555; }
+    .status { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; }
+    .status.Pending { background-color: #f39c12; }
+    .status.Paid { background-color: #27ae60; }
+    .status.Failed { background-color: #e74c3c; }
+    .refresh-btn { display: block; width: 100%; padding: 12px; background: #0d2b45; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; margin-bottom: 15px; cursor: pointer; }
+    h2 { text-align: center; color: #0d2b45; }
+  </style>
+</head>
+<body>
+  <div class="header">🛵 Admin Dashboard</div>
+  <button class="refresh-btn" onclick="loadOrders()">🔄 Refresh Orders</button>
+  <h2>Incoming Orders</h2>
+  <div id="ordersContainer">Loading orders...</div>
+
+  <script>
+    async function loadOrders() {
+      const container = document.getElementById('ordersContainer');
+      container.innerHTML = "Loading...";
+
+      try {
+        const response = await fetch('/api/orders');
+        const data = await response.json();
+        
+        if (data.success && data.orders.length > 0) {
+          container.innerHTML = '';
+          data.orders.forEach(order => {
+            const statusClass = order.status || 'Pending';
+            const cardClass = statusClass === 'Paid' ? 'paid' : (statusClass === 'Failed' ? 'failed' : '');
+            
+            const card = document.createElement('div');
+            card.className = `order-card ${cardClass}`;
+            card.innerHTML = `
+              <div class="row"><span class="label">Customer:</span> ${order.customerName} (${order.phone})</div>
+              <div class="row"><span class="label">Location:</span> ${order.hostel}, Room ${order.room}</div>
+              <div class="row"><span class="label">Shop:</span> ${order.shopName}</div>
+              <div class="row"><span class="label">Item:</span> ${order.itemDescription} (Qty: ${order.quantity})</div>
+              <div class="row"><span class="label">Goods Total:</span> KES ${order.goodsAmount * order.quantity} (Pay on delivery)</div>
+              <div class="row"><span class="label">Delivery Fee:</span> KES ${order.deliveryFee}</div>
+              <div class="row"><span class="label">Pin:</span> ${order.locationPin || 'N/A'}</div>
+              <div class="row"><span class="label">Status:</span> <span class="status ${statusClass}">${statusClass}</span></div>
+              <div class="row" style="font-size:12px; color:#777; margin-top:5px;">${new Date(order.createdAt).toLocaleString()}</div>
+            `;
+            container.appendChild(card);
+          });
+        } else if (data.success && data.orders.length === 0) {
+          container.innerHTML = "<p style='text-align:center;'>No orders yet.</p>";
+        } else {
+          container.innerHTML = "<p style='text-align:center; color:red;'>Failed to load orders.</p>";
+        }
+      } catch (error) {
+        container.innerHTML = "<p style='text-align:center; color:red;'>Network error.</p>";
+      }
+    }
+
+    // Load orders automatically when the page opens
+    loadOrders();
+  </script>
+</body>
+</html>
