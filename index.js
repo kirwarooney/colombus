@@ -5,8 +5,13 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const mongoose = require('mongoose');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
@@ -30,12 +35,22 @@ const orderSchema = new mongoose.Schema({
     quantity: Number,
     locationPin: String,
     deliveryFee: Number,
-    status: { type: String, default: 'Pending' }, // Pending, Paid, Failed
+    status: { type: String, default: 'Pending' }, 
     mpesaReceipt: String,
     checkoutRequestID: String,
     createdAt: { type: Date, default: Date.now }
 });
 const Order = mongoose.model('Order', orderSchema);
+
+// ================================
+// SOCKET.IO CONNECTION
+// ================================
+io.on('connection', (socket) => {
+    console.log('🟢 Admin dashboard connected via WebSocket');
+    socket.on('disconnect', () => {
+        console.log('🔴 Admin dashboard disconnected');
+    });
+});
 
 // ================================
 // M-PESA (SAFARICOM) FUNCTIONS
@@ -54,7 +69,6 @@ app.post('/api/pay', async (req, res) => {
     try {
         const { phone, amount, orderDetails } = req.body;
         
-        // 1. Save order to database FIRST
         const newOrder = new Order({
             hostel: orderDetails.hostel,
             room: orderDetails.room,
@@ -70,8 +84,9 @@ app.post('/api/pay', async (req, res) => {
         });
         await newOrder.save();
         console.log("📦 Order saved to database:", newOrder._id);
+        
+        io.emit('new-order', newOrder);
 
-        // 2. Trigger M-Pesa STK Push
         const token = await getMpesaAccessToken();
         const date = new Date();
         const timestamp = date.getFullYear() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2) + ("0" + date.getHours()).slice(-2) + ("0" + date.getMinutes()).slice(-2) + ("0" + date.getSeconds()).slice(-2);
@@ -101,7 +116,6 @@ app.post('/api/pay', async (req, res) => {
             headers: { Authorization: `Bearer ${token}` }
         });
 
-        // 3. Save the CheckoutRequestID to the order so we can match the callback later
         newOrder.checkoutRequestID = response.data.CheckoutRequestID;
         await newOrder.save();
 
@@ -112,58 +126,84 @@ app.post('/api/pay', async (req, res) => {
     }
 });
 
-// Callback endpoint for M-Pesa results
 app.post('/api/callback', async (req, res) => {
     console.log("M-Pesa Callback Received:", JSON.stringify(req.body, null, 2));
-    
     try {
         const callbackData = req.body.Body.stkCallback;
         const checkoutRequestID = callbackData.CheckoutRequestID;
         const resultCode = callbackData.ResultCode;
         
         if (resultCode === 0) {
-            // Payment successful
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
-            
-            // Update the order in the database
-            await Order.findOneAndUpdate(
+            const updatedOrder = await Order.findOneAndUpdate(
                 { checkoutRequestID: checkoutRequestID },
-                { status: 'Paid', mpesaReceipt: mpesaReceipt }
+                { status: 'Paid', mpesaReceipt: mpesaReceipt },
+                { new: true }
             );
             console.log("✅ Order marked as PAID in database.");
+            if (updatedOrder) io.emit('order-updated', updatedOrder);
         } else {
-            // Payment failed
-            await Order.findOneAndUpdate(
+            const updatedOrder = await Order.findOneAndUpdate(
                 { checkoutRequestID: checkoutRequestID },
-                { status: 'Failed' }
+                { status: 'Failed' },
+                { new: true }
             );
             console.log("❌ Order payment FAILED.");
+            if (updatedOrder) io.emit('order-updated', updatedOrder);
         }
     } catch (error) {
         console.error("Error updating order in callback:", error.message);
     }
-
     res.json({ ResultCode: 0, ResultDesc: "Success" });
 });
 
 // ================================
-// ADMIN DASHBOARD ENDPOINT
+// ADMIN DASHBOARD ENDPOINTS
 // ================================
 app.get('/api/orders', async (req, res) => {
     try {
-        const orders = await Order.find().sort({ createdAt: -1 }); // Newest first
+        const orders = await Order.find().sort({ createdAt: -1 });
         res.json({ success: true, orders: orders });
     } catch (error) {
-        console.error("Error fetching orders:", error.message);
         res.status(500).json({ success: false, error: "Failed to fetch orders" });
     }
 });
 
-app.get('/', (req, res) => {
-    res.send('Delivery app backend is running!');
+// Endpoint to update order status manually
+app.put('/api/orders/:id/status', async (req, res) => {
+    try {
+        const { status } = req.body;
+        const updatedOrder = await Order.findByIdAndUpdate(
+            req.params.id,
+            { status: status },
+            { new: true }
+        );
+        if (!updatedOrder) return res.status(404).json({ success: false, error: "Order not found" });
+        
+        io.emit('order-updated', updatedOrder);
+        res.json({ success: true, order: updatedOrder });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Failed to update status" });
+    }
+});
+
+// 🔥 NEW: Endpoint to delete an order
+app.delete('/api/orders/:id', async (req, res) => {
+    try {
+        const deletedOrder = await Order.findByIdAndDelete(req.params.id);
+        if (!deletedOrder) return res.status(404).json({ success: false, error: "Order not found" });
+        
+        // Tell the frontend to remove the order card in real-time
+        io.emit('order-deleted', req.params.id);
+        console.log("🗑️ Order deleted:", req.params.id);
+        res.json({ success: true, message: "Order deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting order:", error.message);
+        res.status(500).json({ success: false, error: "Failed to delete order" });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
