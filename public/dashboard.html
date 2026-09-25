@@ -5,67 +5,143 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 15px; background-color: #f4f4f9; color: #333; }
-    .header { background-color: #0d2b45; color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; border-radius: 8px; margin-bottom: 15px; }
+    .header { background-color: #0d2b45; color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;}
+    .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 12px; background: #27ae60; color: white; }
     .order-card { background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #f39c12; }
-    .order-card.paid { border-left: 5px solid #27ae60; }
-    .order-card.failed { border-left: 5px solid #e74c3c; }
+    .order-card.paid { border-left-color: #27ae60; }
+    .order-card.failed { border-left-color: #e74c3c; }
     .row { margin-bottom: 5px; font-size: 14px; }
     .label { font-weight: bold; color: #555; }
     .status { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; }
     .status.Pending { background-color: #f39c12; }
     .status.Paid { background-color: #27ae60; }
     .status.Failed { background-color: #e74c3c; }
-    .refresh-btn { display: block; width: 100%; padding: 12px; background: #0d2b45; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; margin-bottom: 15px; cursor: pointer; }
+    .status.OutforDelivery { background-color: #3498db; }
+    .status.Delivered { background-color: #8e44ad; }
+    .action-buttons { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
+    .action-buttons button { padding: 6px 10px; font-size: 12px; border: none; border-radius: 4px; color: white; cursor: pointer; }
+    .btn-out { background-color: #3498db; }
+    .btn-deliver { background-color: #8e44ad; }
+    .btn-delete { background-color: #e74c3c; } /* New Delete Button Style */
     h2 { text-align: center; color: #0d2b45; }
   </style>
 </head>
 <body>
-  <div class="header">🛵 Admin Dashboard</div>
-  <button class="refresh-btn" onclick="loadOrders()">🔄 Refresh Orders</button>
+  <div class="header">
+    🛵 Admin Dashboard
+    <span class="status-badge">● Live</span>
+  </div>
+  
   <h2>Incoming Orders</h2>
   <div id="ordersContainer">Loading orders...</div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    async function loadOrders() {
-      const container = document.getElementById('ordersContainer');
-      container.innerHTML = "Loading...";
+    const socket = io();
+    const container = document.getElementById('ordersContainer');
 
+    // Load existing orders on page load
+    async function loadOrders() {
       try {
         const response = await fetch('/api/orders');
         const data = await response.json();
-        
         if (data.success && data.orders.length > 0) {
           container.innerHTML = '';
-          data.orders.forEach(order => {
-            const statusClass = order.status || 'Pending';
-            const cardClass = statusClass === 'Paid' ? 'paid' : (statusClass === 'Failed' ? 'failed' : '');
-            
-            const card = document.createElement('div');
-            card.className = `order-card ${cardClass}`;
-            card.innerHTML = `
-              <div class="row"><span class="label">Customer:</span> ${order.customerName} (${order.phone})</div>
-              <div class="row"><span class="label">Location:</span> ${order.hostel}, Room ${order.room}</div>
-              <div class="row"><span class="label">Shop:</span> ${order.shopName}</div>
-              <div class="row"><span class="label">Item:</span> ${order.itemDescription} (Qty: ${order.quantity})</div>
-              <div class="row"><span class="label">Goods Total:</span> KES ${order.goodsAmount * order.quantity} (Pay on delivery)</div>
-              <div class="row"><span class="label">Delivery Fee:</span> KES ${order.deliveryFee}</div>
-              <div class="row"><span class="label">Pin:</span> ${order.locationPin || 'N/A'}</div>
-              <div class="row"><span class="label">Status:</span> <span class="status ${statusClass}">${statusClass}</span></div>
-              <div class="row" style="font-size:12px; color:#777; margin-top:5px;">${new Date(order.createdAt).toLocaleString()}</div>
-            `;
-            container.appendChild(card);
-          });
-        } else if (data.success && data.orders.length === 0) {
-          container.innerHTML = "<p style='text-align:center;'>No orders yet.</p>";
+          data.orders.forEach(order => renderOrder(order));
         } else {
-          container.innerHTML = "<p style='text-align:center; color:red;'>Failed to load orders.</p>";
+          container.innerHTML = "<p style='text-align:center;'>No orders yet.</p>";
         }
       } catch (error) {
         container.innerHTML = "<p style='text-align:center; color:red;'>Network error.</p>";
       }
     }
 
-    // Load orders automatically when the page opens
+    // Render a single order card
+    function renderOrder(order) {
+      const statusClass = order.status || 'Pending';
+      const cardClass = statusClass === 'Paid' ? 'paid' : (statusClass === 'Failed' ? 'failed' : '');
+      
+      const card = document.createElement('div');
+      card.className = `order-card ${cardClass}`;
+      card.id = `order-${order._id}`;
+      card.innerHTML = `
+        <div class="row"><span class="label">Customer:</span> ${order.customerName} (${order.phone})</div>
+        <div class="row"><span class="label">Location:</span> ${order.hostel}, Room ${order.room}</div>
+        <div class="row"><span class="label">Shop:</span> ${order.shopName}</div>
+        <div class="row"><span class="label">Item:</span> ${order.itemDescription} (Qty: ${order.quantity})</div>
+        <div class="row"><span class="label">Goods Total:</span> KES ${order.goodsAmount * order.quantity} (Pay on delivery)</div>
+        <div class="row"><span class="label">Delivery Fee:</span> KES ${order.deliveryFee}</div>
+        <div class="row"><span class="label">Pin:</span> ${order.locationPin || 'N/A'}</div>
+        <div class="row"><span class="label">Status:</span> <span class="status ${statusClass}">${statusClass}</span></div>
+        <div class="row" style="font-size:12px; color:#777; margin-top:5px;">${new Date(order.createdAt).toLocaleString()}</div>
+        <div class="action-buttons">
+          <button class="btn-out" onclick="updateStatus('${order._id}', 'Out for Delivery')">🚚 Out for Delivery</button>
+          <button class="btn-deliver" onclick="updateStatus('${order._id}', 'Delivered')">✅ Delivered</button>
+          <button class="btn-delete" onclick="deleteOrder('${order._id}')">🗑️ Delete</button>
+        </div>
+      `;
+      container.prepend(card); 
+    }
+
+    // Update status function
+    async function updateStatus(orderId, newStatus) {
+      try {
+        await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+      } catch (error) {
+        alert("Failed to update status.");
+      }
+    }
+
+    // 🔥 NEW: Delete order function
+    async function deleteOrder(orderId) {
+      if (!confirm("Are you sure you want to delete this order permanently?")) return;
+      
+      try {
+        const response = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (data.success) {
+          const card = document.getElementById(`order-${orderId}`);
+          if (card) card.remove();
+        } else {
+          alert("Failed to delete order.");
+        }
+      } catch (error) {
+        alert("Network error. Please try again.");
+      }
+    }
+
+    // 🔥 REAL-TIME LISTENERS
+    socket.on('new-order', (order) => {
+      if (container.innerHTML.includes("No orders yet")) container.innerHTML = '';
+      renderOrder(order);
+    });
+
+    socket.on('order-updated', (updatedOrder) => {
+      const existingCard = document.getElementById(`order-${updatedOrder._id}`);
+      if (existingCard) {
+        const statusSpan = existingCard.querySelector('.status');
+        if (statusSpan) {
+          statusSpan.className = `status ${updatedOrder.status}`;
+          statusSpan.innerText = updatedOrder.status;
+        }
+        existingCard.className = `order-card ${updatedOrder.status === 'Paid' ? 'paid' : (updatedOrder.status === 'Failed' ? 'failed' : '')}`;
+      }
+    });
+
+    // 🔥 NEW: Real-time listener for deleted orders
+    socket.on('order-deleted', (orderId) => {
+      const card = document.getElementById(`order-${orderId}`);
+      if (card) {
+        card.remove();
+        console.log("Order removed in real-time.");
+      }
+    });
+
+    // Load orders on page open
     loadOrders();
   </script>
 </body>
