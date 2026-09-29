@@ -10,9 +10,9 @@
     .status-badge { font-size: 10px; padding: 3px 8px; border-radius: 12px; background: #27ae60; color: white; }
     .logout-btn { background: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
     
-    /* Stats Cards */
-    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-    .stat-card { background: white; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    /* Stats Cards — 2x2 grid */
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .stat-card { background: white; border-radius: 10px; padding: 12px 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
     .stat-card .num { font-size: 20px; font-weight: 700; color: #0d2b45; }
     .stat-card .lbl { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
     .stat-card.green .num { color: #27ae60; }
@@ -71,7 +71,7 @@
   <div class="stats">
     <div class="stat-card">
       <div class="num" id="statToday">0</div>
-      <div class="lbl">Today</div>
+      <div class="lbl">Orders Today</div>
     </div>
     <div class="stat-card orange">
       <div class="num" id="statPending">0</div>
@@ -81,10 +81,14 @@
       <div class="num" id="statRevenue">KES 0</div>
       <div class="lbl">Today Fees</div>
     </div>
+    <div class="stat-card" style="background: linear-gradient(135deg, #e8f0fe, #d4e4fc);">
+      <div class="num" id="statVisits">0</div>
+      <div class="lbl">👀 Visitors Today</div>
+    </div>
   </div>
 
   <!-- Search + Filters -->
-  <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search by name or phone..." oninput="applyFilters()">
+  <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search by name, phone or shop..." oninput="applyFilters()">
   <div class="filters">
     <button class="filter-btn active" data-filter="All" onclick="setFilter(this)">All</button>
     <button class="filter-btn" data-filter="Pending" onclick="setFilter(this)">🟠 Pending</button>
@@ -168,6 +172,24 @@
       document.getElementById('statToday').innerText = todayCount;
       document.getElementById('statPending').innerText = pendingCount;
       document.getElementById('statRevenue').innerText = 'KES ' + todayRevenue;
+    }
+
+    // ================================
+    // LOAD VISITOR STATS
+    // ================================
+    async function loadVisits() {
+      try {
+        const response = await fetch('/api/visits');
+        if (handleAuthError(response)) return;
+        const data = await response.json();
+        if (data.success) {
+          const visitsEl = document.getElementById('statVisits');
+          visitsEl.innerText = data.uniqueToday;
+          visitsEl.title = `Today: ${data.todayVisits} views (${data.uniqueToday} unique) | All-time: ${data.totalVisits} views (${data.uniqueTotal} unique)`;
+        }
+      } catch (error) {
+        console.error('Could not load visits:', error);
+      }
     }
 
     // ================================
@@ -290,6 +312,7 @@
       allOrders.unshift(order);
       updateStats();
       applyFilters();
+      loadVisits();
     });
 
     socket.on('order-updated', (updatedOrder) => {
@@ -305,7 +328,14 @@
       applyFilters();
     });
 
+    // ================================
+    // INIT
+    // ================================
     loadOrders();
+    loadVisits();
+
+    // Refresh visitor stats every 60 seconds
+    setInterval(loadVisits, 60000);
   </script>
 </body>
 </html>
