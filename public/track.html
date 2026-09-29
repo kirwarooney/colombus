@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Track My Order - Columbus Delivery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(180deg, #0d2b45 0%, #1a4a6e 40%, #f4f4f9 40%, #f4f4f9 100%); min-height: 100vh; }
+    .hero { text-align: center; color: white; padding: 30px 20px 50px; }
+    .hero h1 { margin: 0 0 8px; font-size: 24px; }
+    .hero p { margin: 0; font-size: 14px; opacity: 0.85; }
+    .container { padding: 0 15px 40px; max-width: 520px; margin: auto; }
+    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #444; }
+    input { width: 100%; padding: 14px; border: 1.5px solid #e0e0e8; border-radius: 10px; font-size: 16px; background: #fafbfd; }
+    input:focus { outline: none; border-color: #0d2b45; background: white; }
+    .btn-track { width: 100%; padding: 14px; background: linear-gradient(135deg, #27ae60, #219a52); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; margin-top: 12px; cursor: pointer; }
+    .btn-track:active { transform: scale(0.98); }
+    
+    .order-history { margin-top: 20px; }
+    .order-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 5px solid #f39c12; }
+    .order-item.Paid { border-left-color: #27ae60; }
+    .order-item.Failed { border-left-color: #e74c3c; }
+    .order-item.OutforDelivery { border-left-color: #3498db; }
+    .order-item.Delivered { border-left-color: #8e44ad; }
+    
+    .order-item h3 { margin: 0 0 8px; font-size: 14px; color: #0d2b45; }
+    .order-item .row { font-size: 13px; margin-bottom: 4px; color: #555; }
+    .order-item .row b { color: #333; }
+    
+    .status-pill { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; color: white; margin-top: 6px; }
+    .status-pill.Pending { background-color: #f39c12; }
+    .status-pill.Paid { background-color: #27ae60; }
+    .status-pill.Failed { background-color: #e74c3c; }
+    .status-pill.OutforDelivery { background-color: #3498db; }
+    .status-pill.Delivered { background-color: #8e44ad; }
+    
+    .empty-state { text-align: center; padding: 30px; color: #777; background: white; border-radius: 12px; }
+    .error-msg { color: #e74c3c; text-align: center; padding: 12px; font-weight: 600; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>📦 Track My Order</h1>
+    <p>Enter your phone number to see your orders</p>
+  </div>
+  
+  <div class="container">
+    <div class="card">
+      <label>Your Phone Number</label>
+      <input id="phoneInput" type="tel" placeholder="e.g. 0712345678" onkeypress="if(event.key==='Enter') track()">
+      <button class="btn-track" onclick="track()">🔍 Track My Orders</button>
+      <div id="errorMsg" class="error-msg"></div>
+    </div>
+    
+    <div id="ordersContainer" class="order-history"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let currentPhone = null;
+
+    function formatPhone(phone) {
+      let p = String(phone).replace(/\D/g, '');
+      if (p.startsWith('0')) p = '254' + p.substring(1);
+      else if (p.startsWith('254')) { /* ok */ }
+      else if (p.length === 9) p = '254' + p;
+      return p;
+    }
+
+    async function track() {
+      const input = document.getElementById('phoneInput').value;
+      const errorMsg = document.getElementById('errorMsg');
+      const container = document.getElementById('ordersContainer');
+      errorMsg.innerText = '';
+
+      if (!input || input.length < 9) {
+        errorMsg.innerText = '❌ Please enter a valid phone number.';
+        return;
+      }
+
+      currentPhone = formatPhone(input);
+      container.innerHTML = '<p style="text-align:center;">Loading your orders...</p>';
+
+      try {
+        const response = await fetch(`/api/track/${currentPhone}`);
+        const data = await response.json();
+        
+        if (data.success && data.orders.length > 0) {
+          container.innerHTML = '';
+          data.orders.forEach(order => renderOrder(order));
+        } else if (data.success) {
+          container.innerHTML = '<div class="empty-state">📭 No orders found for this number.<br><br>Place an order to see it here!</div>';
+        } else {
+          container.innerHTML = '<div class="empty-state">Could not load orders.</div>';
+        }
+      } catch (error) {
+        container.innerHTML = '<div class="empty-state">Network error. Please try again.</div>';
+      }
+    }
+
+    function renderOrder(order) {
+      const statusClass = order.status || 'Pending';
+      const ref = order._id.slice(-6);
+      const goodsTotal = order.goodsAmount * order.quantity;
+      
+      const card = document.createElement('div');
+      card.className = `order-item ${statusClass}`;
+      card.id = `track-${order._id}`;
+      card.innerHTML = `
+        <h3>Order #${ref}</h3>
+        <div class="row"><b>Item:</b> ${order.itemDescription} (x${order.quantity})</div>
+        <div class="row"><b>Shop:</b> ${order.shopName}</div>
+        <div class="row"><b>Delivery Fee:</b> KES ${order.deliveryFee} ✅ Paid</div>
+        <div class="row"><b>Goods Total:</b> KES ${goodsTotal} (Pay on delivery)</div>
+        <div class="row"><b>Location:</b> ${order.hostel}, Room ${order.room}</div>
+        <div class="row" style="font-size:11px; color:#999; margin-top:6px;">${new Date(order.createdAt).toLocaleString()}</div>
+        <span class="status-pill ${statusClass}">${statusClass}</span>
+      `;
+      // Newest on top
+      document.getElementById('ordersContainer').prepend(card);
+    }
+
+    // Real-time updates
+    socket.on('order-updated', (updatedOrder) => {
+      if (currentPhone && formatPhone(updatedOrder.phone) === currentPhone) {
+        const card = document.getElementById(`track-${updatedOrder._id}`);
+        if (card) {
+          card.className = `order-item ${updatedOrder.status}`;
+          const pill = card.querySelector('.status-pill');
+          if (pill) {
+            pill.className = `status-pill ${updatedOrder.status}`;
+            pill.innerText = updatedOrder.status;
+          }
+        }
+      }
+    });
+
+    socket.on('new-order', (order) => {
+      if (currentPhone && formatPhone(order.phone) === currentPhone) {
+        renderOrder(order);
+      }
+    });
+  </script>
+</body>
+</html>
