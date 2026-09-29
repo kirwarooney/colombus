@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d2b45 0%, #1a4a6e 100%); padding: 20px; }
+    .login-box { background: white; border-radius: 16px; padding: 30px 25px; width: 100%; max-width: 380px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+    .logo { text-align: center; font-size: 45px; margin-bottom: 10px; }
+    h1 { text-align: center; color: #0d2b45; font-size: 22px; margin: 0 0 8px; }
+    p { text-align: center; color: #666; font-size: 13px; margin: 0 0 25px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 13px; color: #444; }
+    input { width: 100%; padding: 14px; border: 1.5px solid #e0e0e8; border-radius: 10px; font-size: 16px; background: #fafbfd; }
+    input:focus { outline: none; border-color: #0d2b45; background: white; }
+    button { width: 100%; padding: 14px; background: linear-gradient(135deg, #27ae60, #219a52); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; margin-top: 20px; cursor: pointer; }
+    button:active { transform: scale(0.98); }
+    .error { color: #e74c3c; text-align: center; font-size: 13px; margin-top: 12px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <div class="logo">🛵</div>
+    <h1>Admin Login</h1>
+    <p>Columbus Delivery Dashboard</p>
+    
+    <label>Admin Password</label>
+    <input type="password" id="password" placeholder="Enter password" onkeypress="if(event.key==='Enter') login()">
+    
+    <button onclick="login()">🔓 Login</button>
+    <div id="error" class="error"></div>
+  </div>
+
+  <script>
+    async function login() {
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('error');
+      errorEl.innerText = '';
+      
+      if (!password) { errorEl.innerText = "Please enter the password."; return; }
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          window.location.href = '/dashboard.html';
+        } else {
+          errorEl.innerText = data.error || 'Login failed.';
+        }
+      } catch (error) {
+        errorEl.innerText = 'Network error. Try again.';
+      }
+    }
+  </script>
+</body>
+</html>
