@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -40,8 +41,8 @@
 </head>
 <body>
   <div class="hero">
-    <h1>🛵 Columbus Delivery</h1>
-    <p>Fast, reliable campus delivery</p>
+    <h1 id="businessName">🛵 Columbus Delivery</h1>
+    <p id="footerMessage">Fast, reliable campus delivery</p>
     <a href="/track.html" class="track-link">📦 Track My Order</a>
   </div>
   
@@ -113,25 +114,46 @@
         </div>
         <div class="summary-row">
           <span>Delivery Fee <span class="badge">FIXED</span></span>
-          <span>KES 10</span>
+          <span id="deliveryFeeDisplay">KES 10</span>
         </div>
         <div class="summary-row total">
           <span>Total to Pay</span>
           <span id="totalDisplay">KES 10</span>
         </div>
-        <div style="font-size:11px; color:#666; margin-top:6px;">💰 You pay KES 10 now (delivery fee). Goods balance is paid on delivery.</div>
+        <div style="font-size:11px; color:#666; margin-top:6px;">💰 You pay the delivery fee now. Goods balance is paid on delivery.</div>
       </div>
 
-      <button class="btn-pay" onclick="payDeliveryFee()">🔒 Pay KES 10 & Place Order</button>
+      <button class="btn-pay" id="payBtn" onclick="payDeliveryFee()">🔒 Pay KES 10 & Place Order</button>
       <div id="result" class="result" style="display:none;"></div>
     </div>
   </div>
 
   <script>
-    const DELIVERY_FEE = 10;
+    let DELIVERY_FEE = 10;
     let userLatitude = null;
     let userLongitude = null;
 
+    // ================================
+    // LOAD SETTINGS FROM SERVER
+    // ================================
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings/public');
+        const data = await res.json();
+        if (data.success) {
+          DELIVERY_FEE = Number(data.settings.deliveryFee) || 10;
+          document.getElementById('businessName').innerText = '🛵 ' + data.settings.businessName;
+          document.getElementById('footerMessage').innerText = data.settings.footerMessage;
+          document.getElementById('deliveryFeeDisplay').innerText = 'KES ' + DELIVERY_FEE;
+          document.getElementById('payBtn').innerText = '🔒 Pay KES ' + DELIVERY_FEE + ' & Place Order';
+          calculateTotal();
+        }
+      } catch (e) { console.error('Settings load error:', e); }
+    }
+
+    // ================================
+    // PIN LOCATION
+    // ================================
     function pinLocation() {
       const btn = document.getElementById('pinBtn');
       const status = document.getElementById('pinStatus');
@@ -161,6 +183,9 @@
       );
     }
 
+    // ================================
+    // CALCULATE TOTAL
+    // ================================
     function calculateTotal() {
       const goods = parseFloat(document.getElementById('goodsAmount').value) || 0;
       const quantity = parseFloat(document.getElementById('quantity').value) || 0;
@@ -171,6 +196,9 @@
       document.getElementById('totalDisplay').innerText = "KES " + grandTotal;
     }
 
+    // ================================
+    // SHOW RESULT MESSAGE
+    // ================================
     function showResult(message, type) {
       const result = document.getElementById('result');
       result.style.display = 'block';
@@ -178,6 +206,9 @@
       result.innerText = message;
     }
 
+    // ================================
+    // PAY DELIVERY FEE
+    // ================================
     async function payDeliveryFee() {
       const hostel = document.getElementById('hostel').value;
       const room = document.getElementById('room').value;
@@ -222,6 +253,9 @@
         showResult("❌ Network error. Please try again.", "error");
       }
     }
+
+    // Load settings on page open
+    loadSettings();
   </script>
 </body>
 </html>
