@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 // ================================
-// SESSION CONFIGURATION
+// SESSION
 // ================================
 app.use(session({
   secret: process.env.SESSION_SECRET || 'columbus-secret-change-me',
@@ -35,36 +35,28 @@ function requireAuth(req, res, next) {
   res.redirect('/login.html');
 }
 
-app.get('/dashboard.html', requireAuth, (req, res) => {
-  res.sendFile(__dirname + '/public/dashboard.html');
-});
-
+app.get('/dashboard.html', requireAuth, (req, res) => res.sendFile(__dirname + '/public/dashboard.html'));
+app.get('/settings.html', requireAuth, (req, res) => res.sendFile(__dirname + '/public/settings.html'));
 app.get('/login.html', (req, res) => {
   if (req.session && req.session.authenticated) return res.redirect('/dashboard.html');
   res.sendFile(__dirname + '/public/login.html');
 });
 
 // ================================
-// VISITOR TRACKING MIDDLEWARE
+// VISITOR TRACKING
 // ================================
-// Tracks page views on public pages (homepage and track page)
 app.use(async (req, res, next) => {
   const publicPaths = ['/', '/index.html', '/track.html'];
   if (req.method === 'GET' && publicPaths.includes(req.path)) {
     try {
-      // Get real IP (Render forwards the real IP via x-forwarded-for)
       const forwarded = req.headers['x-forwarded-for'];
       const ip = forwarded ? forwarded.split(',')[0].trim() : (req.socket.remoteAddress || 'unknown');
       await Visit.create({ ip, path: req.path });
-    } catch (e) {
-      // Silent fail — don't break the page if tracking fails
-      console.error('Visit tracking error:', e.message);
-    }
+    } catch (e) { console.error('Visit track error:', e.message); }
   }
   next();
 });
 
-// Static files (after protected routes and tracking middleware)
 app.use(express.static('public'));
 
 // ================================
@@ -80,22 +72,28 @@ app.post('/api/login', (req, res) => {
     res.status(401).json({ success: false, error: 'Wrong password' });
   }
 });
-
-app.post('/api/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ success: true });
-});
-
-app.get('/api/check-auth', (req, res) => {
-  res.json({ authenticated: !!(req.session && req.session.authenticated) });
-});
+app.post('/api/logout', (req, res) => { req.session.destroy(); res.json({ success: true }); });
+app.get('/api/check-auth', (req, res) => res.json({ authenticated: !!(req.session && req.session.authenticated) }));
 
 // ================================
-// DATABASE CONNECTION
+// DATABASE
 // ================================
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ Connected to MongoDB"))
-  .catch(err => console.error("❌ MongoDB Connection Error:", err.message));
+  .then(async () => {
+    console.log("✅ Connected to MongoDB");
+    // Ensure default settings exist
+    const existing = await Settings.findOne();
+    if (!existing) {
+      await Settings.create({
+        businessName: 'Columbus Delivery',
+        deliveryFee: 10,
+        contactPhone: '0719516573',
+        footerMessage: 'Fast, reliable campus delivery'
+      });
+      console.log("⚙️ Default settings created");
+    }
+  })
+  .catch(err => console.error("❌ MongoDB Error:", err.message));
 
 // Order Schema
 const orderSchema = new mongoose.Schema({
@@ -108,13 +106,20 @@ const orderSchema = new mongoose.Schema({
 });
 const Order = mongoose.model('Order', orderSchema);
 
-// Visit Schema — tracks page views
+// Visit Schema
 const visitSchema = new mongoose.Schema({
-    ip: String,
-    path: String,
-    createdAt: { type: Date, default: Date.now }
+    ip: String, path: String, createdAt: { type: Date, default: Date.now }
 });
 const Visit = mongoose.model('Visit', visitSchema);
+
+// Settings Schema — single document
+const settingsSchema = new mongoose.Schema({
+    businessName: { type: String, default: 'Columbus Delivery' },
+    deliveryFee: { type: Number, default: 10 },
+    contactPhone: { type: String, default: '' },
+    footerMessage: { type: String, default: 'Fast, reliable campus delivery' }
+});
+const Settings = mongoose.model('Settings', settingsSchema);
 
 // ================================
 // SOCKET.IO
@@ -125,7 +130,7 @@ io.on('connection', (socket) => {
 });
 
 // ================================
-// M-PESA FUNCTIONS
+// M-PESA
 // ================================
 async function getMpesaAccessToken() {
     const key = process.env.MPESA_CONSUMER_KEY;
@@ -139,7 +144,11 @@ async function getMpesaAccessToken() {
 
 app.post('/api/pay', async (req, res) => {
     try {
-        const { phone, amount, orderDetails } = req.body;
+        const { phone, orderDetails } = req.body;
+        
+        // Read current settings to get delivery fee
+        const settings = await Settings.findOne();
+        const deliveryFee = settings ? settings.deliveryFee : 10;
         
         const newOrder = new Order({
             hostel: orderDetails.hostel, room: orderDetails.room,
@@ -148,7 +157,7 @@ app.post('/api/pay', async (req, res) => {
             goodsAmount: orderDetails.goodsAmount, quantity: orderDetails.quantity,
             locationPin: orderDetails.locationPin,
             latitude: orderDetails.latitude, longitude: orderDetails.longitude,
-            deliveryFee: amount, status: 'Pending'
+            deliveryFee: deliveryFee, status: 'Pending'
         });
         await newOrder.save();
         console.log("📦 Order saved:", newOrder._id);
@@ -167,7 +176,7 @@ app.post('/api/pay', async (req, res) => {
 
         const stkPushData = {
             BusinessShortCode: shortcode, Password: password, Timestamp: timestamp,
-            TransactionType: "CustomerPayBillOnline", Amount: amount,
+            TransactionType: "CustomerPayBillOnline", Amount: deliveryFee,
             PartyA: formattedPhone, PartyB: shortcode, PhoneNumber: formattedPhone,
             CallBackURL: process.env.MPESA_CALLBACK_URL,
             AccountReference: "ColumbusDelivery", TransactionDesc: "Delivery Fee Payment"
@@ -191,17 +200,12 @@ app.post('/api/callback', async (req, res) => {
         const callbackData = req.body.Body.stkCallback;
         const checkoutRequestID = callbackData.CheckoutRequestID;
         const resultCode = callbackData.ResultCode;
-        
         if (resultCode === 0) {
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
-            const updatedOrder = await Order.findOneAndUpdate(
-                { checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true }
-            );
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true });
             if (updatedOrder) io.emit('order-updated', updatedOrder);
         } else {
-            const updatedOrder = await Order.findOneAndUpdate(
-                { checkoutRequestID }, { status: 'Failed' }, { new: true }
-            );
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { new: true });
             if (updatedOrder) io.emit('order-updated', updatedOrder);
         }
     } catch (error) { console.error("Callback error:", error.message); }
@@ -209,7 +213,47 @@ app.post('/api/callback', async (req, res) => {
 });
 
 // ================================
-// CUSTOMER TRACKING ENDPOINT
+// SETTINGS ENDPOINTS
+// ================================
+// PUBLIC — customers need to know current delivery fee + business name
+app.get('/api/settings/public', async (req, res) => {
+    try {
+        const settings = await Settings.findOne();
+        res.json({ 
+            success: true, 
+            settings: {
+                businessName: settings?.businessName || 'Columbus Delivery',
+                deliveryFee: settings?.deliveryFee || 10,
+                contactPhone: settings?.contactPhone || '',
+                footerMessage: settings?.footerMessage || 'Fast, reliable campus delivery'
+            }
+        });
+    } catch (error) { res.status(500).json({ success: false }); }
+});
+
+// PROTECTED — admin can update settings
+app.get('/api/settings', requireAuth, async (req, res) => {
+    try {
+        const settings = await Settings.findOne();
+        res.json({ success: true, settings });
+    } catch (error) { res.status(500).json({ success: false }); }
+});
+
+app.put('/api/settings', requireAuth, async (req, res) => {
+    try {
+        const { businessName, deliveryFee, contactPhone, footerMessage } = req.body;
+        const settings = await Settings.findOneAndUpdate(
+            {},
+            { businessName, deliveryFee: Number(deliveryFee), contactPhone, footerMessage },
+            { new: true, upsert: true }
+        );
+        console.log("⚙️ Settings updated:", settings);
+        res.json({ success: true, settings });
+    } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+// ================================
+// CUSTOMER TRACKING
 // ================================
 app.get('/api/track/:phone', async (req, res) => {
     try {
@@ -218,57 +262,34 @@ app.get('/api/track/:phone', async (req, res) => {
         if (phone.startsWith('254')) altPhone = '0' + phone.substring(3);
         else if (phone.startsWith('0')) altPhone = '254' + phone.substring(1);
         else altPhone = phone;
-        
-        const orders = await Order.find({ 
-            $or: [{ phone: phone }, { phone: altPhone }] 
-        }).sort({ createdAt: -1 });
-        
+        const orders = await Order.find({ $or: [{ phone: phone }, { phone: altPhone }] }).sort({ createdAt: -1 });
         res.json({ success: true, orders });
-    } catch (error) { 
-        res.status(500).json({ success: false, error: "Failed to fetch orders" }); 
-    }
+    } catch (error) { res.status(500).json({ success: false }); }
 });
 
 // ================================
-// VISITOR STATS ENDPOINT (Protected)
+// VISITS
 // ================================
 app.get('/api/visits', requireAuth, async (req, res) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
         const todayVisits = await Visit.countDocuments({ createdAt: { $gte: today } });
         const totalVisits = await Visit.countDocuments();
-        
-        // Unique visitors today (distinct IPs)
         const uniqueIpsToday = await Visit.distinct('ip', { createdAt: { $gte: today } });
-        
-        // All-time unique visitors
         const uniqueIpsTotal = await Visit.distinct('ip');
-        
-        res.json({ 
-            success: true, 
-            todayVisits,
-            totalVisits,
-            uniqueToday: uniqueIpsToday.length,
-            uniqueTotal: uniqueIpsTotal.length
-        });
-    } catch (error) {
-        console.error("Visits error:", error.message);
-        res.status(500).json({ success: false });
-    }
+        res.json({ success: true, todayVisits, totalVisits, uniqueToday: uniqueIpsToday.length, uniqueTotal: uniqueIpsTotal.length });
+    } catch (error) { res.status(500).json({ success: false }); }
 });
 
 // ================================
-// PROTECTED ADMIN ENDPOINTS
+// ADMIN ORDERS
 // ================================
 app.get('/api/orders', requireAuth, async (req, res) => {
     try {
         const orders = await Order.find().sort({ createdAt: -1 });
         res.json({ success: true, orders });
-    } catch (error) { 
-        res.status(500).json({ success: false, error: "Failed to fetch orders" }); 
-    }
+    } catch (error) { res.status(500).json({ success: false }); }
 });
 
 app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
@@ -277,9 +298,7 @@ app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
         if (!updatedOrder) return res.status(404).json({ success: false });
         io.emit('order-updated', updatedOrder);
         res.json({ success: true, order: updatedOrder });
-    } catch (error) { 
-        res.status(500).json({ success: false }); 
-    }
+    } catch (error) { res.status(500).json({ success: false }); }
 });
 
 app.delete('/api/orders/:id', requireAuth, async (req, res) => {
@@ -288,9 +307,7 @@ app.delete('/api/orders/:id', requireAuth, async (req, res) => {
         if (!deletedOrder) return res.status(404).json({ success: false });
         io.emit('order-deleted', req.params.id);
         res.json({ success: true });
-    } catch (error) { 
-        res.status(500).json({ success: false }); 
-    }
+    } catch (error) { res.status(500).json({ success: false }); }
 });
 
 const PORT = process.env.PORT || 3000;
