@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Settings - Columbus Delivery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; color: #333; }
+    .header { background: #0d2b45; color: white; padding: 12px 15px; text-align: center; font-size: 18px; font-weight: bold; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .back-btn { background: #3498db; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; }
+    .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); max-width: 500px; margin: auto; }
+    h2 { margin: 0 0 20px; color: #0d2b45; font-size: 18px; text-align: center; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #444; }
+    input, textarea { width: 100%; padding: 12px; border: 1.5px solid #e0e0e8; border-radius: 10px; font-size: 15px; background: #fafbfd; font-family: inherit; }
+    input:focus, textarea:focus { outline: none; border-color: #0d2b45; background: white; }
+    .form-group { margin-bottom: 16px; }
+    .btn-save { width: 100%; padding: 14px; background: linear-gradient(135deg, #27ae60, #219a52); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    .btn-save:active { transform: scale(0.98); }
+    .status-msg { text-align: center; margin-top: 12px; font-weight: 600; padding: 10px; border-radius: 8px; display: none; }
+    .status-msg.success { background: #d4edda; color: #155724; display: block; }
+    .status-msg.error { background: #f8d7da; color: #721c24; display: block; }
+    .hint { font-size: 11px; color: #888; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    ⚙️ Settings
+    <a href="/dashboard.html" class="back-btn">← Back</a>
+  </div>
+
+  <div class="card">
+    <h2>Business Settings</h2>
+    
+    <div class="form-group">
+      <label>Business Name</label>
+      <input id="businessName" type="text" placeholder="Columbus Delivery">
+      <div class="hint">Shown at the top of the customer page</div>
+    </div>
+
+    <div class="form-group">
+      <label>Delivery Fee (KES)</label>
+      <input id="deliveryFee" type="number" placeholder="10">
+      <div class="hint">Charged to the customer on every order</div>
+    </div>
+
+    <div class="form-group">
+      <label>Contact Phone Number</label>
+      <input id="contactPhone" type="tel" placeholder="0712345678">
+      <div class="hint">Shown to customers if they need help</div>
+    </div>
+
+    <div class="form-group">
+      <label>Footer Message</label>
+      <input id="footerMessage" type="text" placeholder="Fast, reliable campus delivery">
+      <div class="hint">Small tagline under the business name</div>
+    </div>
+
+    <button class="btn-save" onclick="saveSettings()">💾 Save Settings</button>
+    <div id="statusMsg" class="status-msg"></div>
+  </div>
+
+  <script>
+    async function loadSettings() {
+      try {
+        const response = await fetch('/api/settings');
+        if (response.status === 401) { window.location.href = '/login.html'; return; }
+        const data = await response.json();
+        if (data.success && data.settings) {
+          document.getElementById('businessName').value = data.settings.businessName || '';
+          document.getElementById('deliveryFee').value = data.settings.deliveryFee || 10;
+          document.getElementById('contactPhone').value = data.settings.contactPhone || '';
+          document.getElementById('footerMessage').value = data.settings.footerMessage || '';
+        }
+      } catch (error) { console.error('Load error:', error); }
+    }
+
+    async function saveSettings() {
+      const statusMsg = document.getElementById('statusMsg');
+      statusMsg.className = 'status-msg';
+      statusMsg.style.display = 'none';
+
+      const payload = {
+        businessName: document.getElementById('businessName').value.trim(),
+        deliveryFee: document.getElementById('deliveryFee').value,
+        contactPhone: document.getElementById('contactPhone').value.trim(),
+        footerMessage: document.getElementById('footerMessage').value.trim()
+      };
+
+      if (!payload.businessName || !payload.deliveryFee) {
+        statusMsg.className = 'status-msg error';
+        statusMsg.innerText = '❌ Business name and delivery fee are required.';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (response.status === 401) { window.location.href = '/login.html'; return; }
+        const data = await response.json();
+        if (data.success) {
+          statusMsg.className = 'status-msg success';
+          statusMsg.innerText = '✅ Settings saved successfully!';
+          setTimeout(() => { statusMsg.style.display = 'none'; }, 3000);
+        } else {
+          statusMsg.className = 'status-msg error';
+          statusMsg.innerText = '❌ Failed to save settings.';
+        }
+      } catch (error) {
+        statusMsg.className = 'status-msg error';
+        statusMsg.innerText = '❌ Network error.';
+      }
+    }
+
+    loadSettings();
+  </script>
+</body>
+</html>
