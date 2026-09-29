@@ -20,26 +20,18 @@ app.use(express.json());
 // SESSION CONFIGURATION
 // ================================
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'columbus-super-secret-key-change-me',
+  secret: process.env.SESSION_SECRET || 'columbus-secret-change-me',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    secure: false // Set to true only if you have HTTPS custom domain
-  }
+  cookie: { maxAge: 24 * 60 * 60 * 1000, secure: false }
 }));
 
 // ================================
 // AUTH MIDDLEWARE
 // ================================
 function requireAuth(req, res, next) {
-  if (req.session && req.session.authenticated) {
-    return next();
-  }
-  // For API routes, send 401. For pages, redirect to login.
-  if (req.path.startsWith('/api/')) {
-    return res.status(401).json({ success: false, error: 'Not authenticated' });
-  }
+  if (req.session && req.session.authenticated) return next();
+  if (req.path.startsWith('/api/')) return res.status(401).json({ success: false, error: 'Not authenticated' });
   res.redirect('/login.html');
 }
 
@@ -50,9 +42,7 @@ app.get('/dashboard.html', requireAuth, (req, res) => {
 
 // Login page (public)
 app.get('/login.html', (req, res) => {
-  if (req.session && req.session.authenticated) {
-    return res.redirect('/dashboard.html');
-  }
+  if (req.session && req.session.authenticated) return res.redirect('/dashboard.html');
   res.sendFile(__dirname + '/public/login.html');
 });
 
@@ -65,7 +55,6 @@ app.use(express.static('public'));
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
   const adminPassword = process.env.ADMIN_PASSWORD || 'columbus2026';
-  
   if (password === adminPassword) {
     req.session.authenticated = true;
     console.log("🔓 Admin logged in");
@@ -92,18 +81,29 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err.message));
 
+// Order Schema
 const orderSchema = new mongoose.Schema({
-    hostel: String, room: String, customerName: String, shopName: String,
-    phone: String, itemDescription: String, goodsAmount: Number, quantity: Number,
-    locationPin: String, latitude: Number, longitude: Number, deliveryFee: Number,
+    hostel: String,
+    room: String,
+    customerName: String,
+    shopName: String,
+    phone: String,
+    itemDescription: String,
+    goodsAmount: Number,
+    quantity: Number,
+    locationPin: String,
+    latitude: Number,
+    longitude: Number,
+    deliveryFee: Number,
     status: { type: String, default: 'Pending' },
-    mpesaReceipt: String, checkoutRequestID: String,
+    mpesaReceipt: String,
+    checkoutRequestID: String,
     createdAt: { type: Date, default: Date.now }
 });
 const Order = mongoose.model('Order', orderSchema);
 
 // ================================
-// SOCKET.IO
+// SOCKET.IO CONNECTION
 // ================================
 io.on('connection', (socket) => {
     console.log('🟢 WebSocket connected');
@@ -111,7 +111,7 @@ io.on('connection', (socket) => {
 });
 
 // ================================
-// M-PESA
+// M-PESA (SAFARICOM) FUNCTIONS
 // ================================
 async function getMpesaAccessToken() {
     const key = process.env.MPESA_CONSUMER_KEY;
@@ -126,17 +126,24 @@ async function getMpesaAccessToken() {
 app.post('/api/pay', async (req, res) => {
     try {
         const { phone, amount, orderDetails } = req.body;
+        
         const newOrder = new Order({
-            hostel: orderDetails.hostel, room: orderDetails.room,
-            customerName: orderDetails.customerName, shopName: orderDetails.shopName,
-            phone: phone, itemDescription: orderDetails.itemDescription,
-            goodsAmount: orderDetails.goodsAmount, quantity: orderDetails.quantity,
+            hostel: orderDetails.hostel,
+            room: orderDetails.room,
+            customerName: orderDetails.customerName,
+            shopName: orderDetails.shopName,
+            phone: phone,
+            itemDescription: orderDetails.itemDescription,
+            goodsAmount: orderDetails.goodsAmount,
+            quantity: orderDetails.quantity,
             locationPin: orderDetails.locationPin,
-            latitude: orderDetails.latitude, longitude: orderDetails.longitude,
-            deliveryFee: amount, status: 'Pending'
+            latitude: orderDetails.latitude,
+            longitude: orderDetails.longitude,
+            deliveryFee: amount,
+            status: 'Pending'
         });
         await newOrder.save();
-        console.log("📦 Order saved:", newOrder._id);
+        console.log("📦 Order saved to database:", newOrder._id);
         io.emit('new-order', newOrder);
 
         const token = await getMpesaAccessToken();
@@ -151,11 +158,17 @@ app.post('/api/pay', async (req, res) => {
         else if (phone.startsWith('+')) formattedPhone = phone.substring(1);
 
         const stkPushData = {
-            BusinessShortCode: shortcode, Password: password, Timestamp: timestamp,
-            TransactionType: "CustomerPayBillOnline", Amount: amount,
-            PartyA: formattedPhone, PartyB: shortcode, PhoneNumber: formattedPhone,
+            BusinessShortCode: shortcode,
+            Password: password,
+            Timestamp: timestamp,
+            TransactionType: "CustomerPayBillOnline",
+            Amount: amount,
+            PartyA: formattedPhone,
+            PartyB: shortcode,
+            PhoneNumber: formattedPhone,
             CallBackURL: process.env.MPESA_CALLBACK_URL,
-            AccountReference: "ColumbusDelivery", TransactionDesc: "Delivery Fee"
+            AccountReference: "ColumbusDelivery",
+            TransactionDesc: "Delivery Fee Payment"
         };
 
         const response = await axios.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', stkPushData, {
@@ -164,6 +177,7 @@ app.post('/api/pay', async (req, res) => {
 
         newOrder.checkoutRequestID = response.data.CheckoutRequestID;
         await newOrder.save();
+
         res.json({ success: true, data: response.data });
     } catch (error) {
         console.error("M-Pesa Error:", error.response ? error.response.data : error.message);
@@ -171,7 +185,9 @@ app.post('/api/pay', async (req, res) => {
     }
 });
 
+// Callback endpoint for M-Pesa results
 app.post('/api/callback', async (req, res) => {
+    console.log("M-Pesa Callback Received:", JSON.stringify(req.body, null, 2));
     try {
         const callbackData = req.body.Body.stkCallback;
         const checkoutRequestID = callbackData.CheckoutRequestID;
@@ -179,14 +195,53 @@ app.post('/api/callback', async (req, res) => {
         
         if (resultCode === 0) {
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true });
+            const updatedOrder = await Order.findOneAndUpdate(
+                { checkoutRequestID: checkoutRequestID },
+                { status: 'Paid', mpesaReceipt: mpesaReceipt },
+                { new: true }
+            );
+            console.log("✅ Order marked as PAID in database.");
             if (updatedOrder) io.emit('order-updated', updatedOrder);
         } else {
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { new: true });
+            const updatedOrder = await Order.findOneAndUpdate(
+                { checkoutRequestID: checkoutRequestID },
+                { status: 'Failed' },
+                { new: true }
+            );
+            console.log("❌ Order payment FAILED.");
             if (updatedOrder) io.emit('order-updated', updatedOrder);
         }
-    } catch (error) { console.error("Callback error:", error.message); }
+    } catch (error) {
+        console.error("Error updating order in callback:", error.message);
+    }
     res.json({ ResultCode: 0, ResultDesc: "Success" });
+});
+
+// ================================
+// CUSTOMER TRACKING ENDPOINT (Public)
+// ================================
+app.get('/api/track/:phone', async (req, res) => {
+    try {
+        const phone = req.params.phone;
+        // Match either format: 0712345678 or 254712345678
+        let altPhone;
+        if (phone.startsWith('254')) {
+            altPhone = '0' + phone.substring(3);
+        } else if (phone.startsWith('0')) {
+            altPhone = '254' + phone.substring(1);
+        } else {
+            altPhone = phone;
+        }
+        
+        const orders = await Order.find({ 
+            $or: [{ phone: phone }, { phone: altPhone }] 
+        }).sort({ createdAt: -1 });
+        
+        res.json({ success: true, orders });
+    } catch (error) { 
+        console.error("Track error:", error.message);
+        res.status(500).json({ success: false, error: "Failed to fetch orders" }); 
+    }
 });
 
 // ================================
@@ -196,25 +251,37 @@ app.get('/api/orders', requireAuth, async (req, res) => {
     try {
         const orders = await Order.find().sort({ createdAt: -1 });
         res.json({ success: true, orders });
-    } catch (error) { res.status(500).json({ success: false, error: "Failed to fetch" }); }
+    } catch (error) { 
+        res.status(500).json({ success: false, error: "Failed to fetch orders" }); 
+    }
 });
 
 app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
     try {
-        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
-        if (!updatedOrder) return res.status(404).json({ success: false });
+        const { status } = req.body;
+        const updatedOrder = await Order.findByIdAndUpdate(
+            req.params.id, 
+            { status }, 
+            { new: true }
+        );
+        if (!updatedOrder) return res.status(404).json({ success: false, error: "Order not found" });
         io.emit('order-updated', updatedOrder);
         res.json({ success: true, order: updatedOrder });
-    } catch (error) { res.status(500).json({ success: false }); }
+    } catch (error) { 
+        res.status(500).json({ success: false, error: "Failed to update status" }); 
+    }
 });
 
 app.delete('/api/orders/:id', requireAuth, async (req, res) => {
     try {
         const deletedOrder = await Order.findByIdAndDelete(req.params.id);
-        if (!deletedOrder) return res.status(404).json({ success: false });
+        if (!deletedOrder) return res.status(404).json({ success: false, error: "Order not found" });
         io.emit('order-deleted', req.params.id);
+        console.log("🗑️ Order deleted:", req.params.id);
         res.json({ success: true });
-    } catch (error) { res.status(500).json({ success: false }); }
+    } catch (error) { 
+        res.status(500).json({ success: false, error: "Failed to delete order" }); 
+    }
 });
 
 const PORT = process.env.PORT || 3000;
