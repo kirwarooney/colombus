@@ -9,6 +9,7 @@
     .header { background: #0d2b45; color: white; padding: 12px 15px; text-align: center; font-size: 18px; font-weight: bold; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
     .status-badge { font-size: 10px; padding: 3px 8px; border-radius: 12px; background: #27ae60; color: white; }
     .logout-btn { background: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .settings-btn { background: #3498db; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-decoration: none; }
     
     /* Stats Cards — 2x2 grid */
     .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
@@ -32,7 +33,6 @@
     .order-card.OutforDelivery { border-top-color: #3498db; }
     .order-card.Delivered { border-top-color: #8e44ad; }
     .row { margin-bottom: 3px; line-height: 1.35; }
-    .label { font-weight: bold; color: #555; }
     
     .status { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; color: white; }
     .status.Pending { background-color: #f39c12; }
@@ -63,6 +63,7 @@
     🛵 Admin Dashboard
     <div style="display: flex; gap: 8px; align-items: center;">
       <span class="status-badge">● Live</span>
+      <a href="/settings.html" class="settings-btn">⚙️</a>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
   </div>
@@ -333,8 +334,6 @@
     // ================================
     loadOrders();
     loadVisits();
-
-    // Refresh visitor stats every 60 seconds
     setInterval(loadVisits, 60000);
   </script>
 </body>
