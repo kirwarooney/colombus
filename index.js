@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 // ================================
-// SESSION CONFIGURATION
+// SESSION
 // ================================
 app.use(session({
   secret: process.env.SESSION_SECRET || 'columbus-secret-change-me',
@@ -35,20 +35,8 @@ function requireAuth(req, res, next) {
   res.redirect('/login.html');
 }
 
-// ================================
-// PROTECTED ROUTES
-// ================================
-app.get('/dashboard.html', requireAuth, (req, res) => {
-  res.sendFile(__dirname + '/public/dashboard.html');
-});
-
-app.get('/settings.html', requireAuth, (req, res) => {
-  res.sendFile(__dirname + '/public/settings.html');
-});
-
-// ================================
-// PUBLIC ROUTES
-// ================================
+app.get('/dashboard.html', requireAuth, (req, res) => res.sendFile(__dirname + '/public/dashboard.html'));
+app.get('/settings.html', requireAuth, (req, res) => res.sendFile(__dirname + '/public/settings.html'));
 app.get('/login.html', (req, res) => {
   if (req.session && req.session.authenticated) return res.redirect('/dashboard.html');
   res.sendFile(__dirname + '/public/login.html');
@@ -84,18 +72,11 @@ app.post('/api/login', (req, res) => {
     res.status(401).json({ success: false, error: 'Wrong password' });
   }
 });
-
-app.post('/api/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ success: true });
-});
-
-app.get('/api/check-auth', (req, res) => {
-  res.json({ authenticated: !!(req.session && req.session.authenticated) });
-});
+app.post('/api/logout', (req, res) => { req.session.destroy(); res.json({ success: true }); });
+app.get('/api/check-auth', (req, res) => res.json({ authenticated: !!(req.session && req.session.authenticated) }));
 
 // ================================
-// DATABASE CONNECTION
+// DATABASE
 // ================================
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
@@ -113,17 +94,14 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error("❌ MongoDB Error:", err.message));
 
-// ================================
-// SCHEMAS
-// ================================
 const orderSchema = new mongoose.Schema({
     hostel: String, room: String, customerName: String, shopName: String,
     phone: String, itemDescription: String, goodsAmount: Number, quantity: Number,
     locationPin: String, latitude: Number, longitude: Number, deliveryFee: Number,
+    paymentOption: { type: String, default: 'delivery_only' },
     status: { type: String, default: 'Pending' },
-    mpesaReceipt: String, checkoutRequestID: String,
     buniTransactionId: String, buniReceipt: String,
-    paymentMethod: { type: String, default: 'daraja' },
+    paymentMethod: { type: String, default: 'buni' },
     createdAt: { type: Date, default: Date.now }
 });
 const Order = mongoose.model('Order', orderSchema);
@@ -150,93 +128,14 @@ io.on('connection', (socket) => {
 });
 
 // ================================
-// M-PESA (SAFARICOM DARAJA)
-// ================================
-async function getMpesaAccessToken() {
-    const key = process.env.MPESA_CONSUMER_KEY;
-    const secret = process.env.MPESA_CONSUMER_SECRET;
-    const auth = Buffer.from(`${key}:${secret}`).toString('base64');
-    const response = await axios.get('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
-        headers: { Authorization: `Basic ${auth}` }
-    });
-    return response.data.access_token;
-}
-
-app.post('/api/pay', async (req, res) => {
-    try {
-        const { phone, amount, orderDetails } = req.body;
-        const settings = await Settings.findOne();
-        const deliveryFee = settings ? settings.deliveryFee : 10;
-        
-        const newOrder = new Order({
-            hostel: orderDetails.hostel, room: orderDetails.room,
-            customerName: orderDetails.customerName, shopName: orderDetails.shopName,
-            phone: phone, itemDescription: orderDetails.itemDescription,
-            goodsAmount: orderDetails.goodsAmount, quantity: orderDetails.quantity,
-            locationPin: orderDetails.locationPin,
-            latitude: orderDetails.latitude, longitude: orderDetails.longitude,
-            deliveryFee: deliveryFee, status: 'Pending', paymentMethod: 'daraja'
-        });
-        await newOrder.save();
-        console.log("📦 Daraja Order saved:", newOrder._id);
-        io.emit('new-order', newOrder);
-
-        const token = await getMpesaAccessToken();
-        const date = new Date();
-        const timestamp = date.getFullYear() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2) + ("0" + date.getHours()).slice(-2) + ("0" + date.getMinutes()).slice(-2) + ("0" + date.getSeconds()).slice(-2);
-        const shortcode = process.env.MPESA_SHORTCODE;
-        const passkey = process.env.MPESA_PASSKEY;
-        const password = Buffer.from(shortcode + passkey + timestamp).toString('base64');
-
-        let formattedPhone = phone;
-        if (phone.startsWith('0')) formattedPhone = '254' + phone.substring(1);
-        else if (phone.startsWith('+')) formattedPhone = phone.substring(1);
-
-        const stkPushData = {
-            BusinessShortCode: shortcode, Password: password, Timestamp: timestamp,
-            TransactionType: "CustomerPayBillOnline", Amount: amount,
-            PartyA: formattedPhone, PartyB: shortcode, PhoneNumber: formattedPhone,
-            CallBackURL: process.env.MPESA_CALLBACK_URL,
-            AccountReference: "ColumbusDelivery", TransactionDesc: "Delivery Fee Payment"
-        };
-
-        const response = await axios.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', stkPushData, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-
-        newOrder.checkoutRequestID = response.data.CheckoutRequestID;
-        await newOrder.save();
-        res.json({ success: true, data: response.data });
-    } catch (error) {
-        console.error("M-Pesa Error:", error.response ? error.response.data : error.message);
-        res.status(500).json({ success: false, error: "M-Pesa initiation failed." });
-    }
-});
-
-app.post('/api/callback', async (req, res) => {
-    try {
-        const callbackData = req.body.Body.stkCallback;
-        const checkoutRequestID = callbackData.CheckoutRequestID;
-        const resultCode = callbackData.ResultCode;
-        if (resultCode === 0) {
-            const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true });
-            if (updatedOrder) io.emit('order-updated', updatedOrder);
-        } else {
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { new: true });
-            if (updatedOrder) io.emit('order-updated', updatedOrder);
-        }
-    } catch (error) { console.error("Callback error:", error.message); }
-    res.json({ ResultCode: 0, ResultDesc: "Success" });
-});
-
-// ================================
-// KCB BUNI INTEGRATION
+// KCB BUNI — TOKEN
 // ================================
 async function getBuniAccessToken() {
     const key = process.env.BUNI_CONSUMER_KEY;
     const secret = process.env.BUNI_CONSUMER_SECRET;
     const auth = Buffer.from(`${key}:${secret}`).toString('base64');
+    
+    console.log("🔑 Requesting Buni Access Token...");
     const response = await axios.post('https://uat.buni.kcbgroup.com/token?grant_type=client_credentials', {}, {
         headers: { 
             Authorization: `Basic ${auth}`,
@@ -246,9 +145,12 @@ async function getBuniAccessToken() {
     return response.data.access_token;
 }
 
+// ================================
+// KCB BUNI — STK PUSH
+// ================================
 app.post('/api/buni/pay', async (req, res) => {
     try {
-        const { phone, amount, orderDetails } = req.body;
+        const { phone, amount, orderDetails, paymentOption } = req.body;
         const settings = await Settings.findOne();
         const deliveryFee = settings ? settings.deliveryFee : 10;
         
@@ -259,7 +161,9 @@ app.post('/api/buni/pay', async (req, res) => {
             goodsAmount: orderDetails.goodsAmount, quantity: orderDetails.quantity,
             locationPin: orderDetails.locationPin,
             latitude: orderDetails.latitude, longitude: orderDetails.longitude,
-            deliveryFee: deliveryFee, status: 'Pending', paymentMethod: 'buni'
+            deliveryFee: deliveryFee, 
+            paymentOption: paymentOption || 'delivery_only',
+            status: 'Pending', paymentMethod: 'buni'
         });
         await newOrder.save();
         console.log("📦 Buni Order saved:", newOrder._id);
@@ -273,14 +177,16 @@ app.post('/api/buni/pay', async (req, res) => {
 
         const buniPayload = {
             phoneNumber: formattedPhone,
-            amount: deliveryFee.toString(),
+            amount: amount.toString(), // Use the amount sent from frontend (10 or 98)
             invoiceNumber: `COLUMBUS-${newOrder._id.toString().slice(-8)}`,
             sharedShortCode: true,
             orgShortCode: process.env.BUNI_ORG_SHORTCODE || '522522',
             orgPassKey: "",
             callbackUrl: process.env.BUNI_CALLBACK_URL,
-            transactionDescription: "Delivery Fee Payment"
+            transactionDescription: "Delivery Payment"
         };
+
+        console.log("🚀 Sending to Buni API:", JSON.stringify(buniPayload, null, 2));
 
         const response = await axios.post('https://uat.buni.kcbgroup.com/mm/api/request/1.0.0/stkpush', buniPayload, {
             headers: { 
@@ -289,20 +195,32 @@ app.post('/api/buni/pay', async (req, res) => {
             }
         });
 
-        newOrder.buniTransactionId = response.data.response.CheckoutRequestID;
+        console.log("✅ Buni API Response:", JSON.stringify(response.data, null, 2));
+
+        // Safely extract CheckoutRequestID (handles different possible response structures)
+        const checkoutId = response.data?.response?.CheckoutRequestID 
+                        || response.data?.CheckoutRequestID 
+                        || response.data?.response?.MerchantRequestID 
+                        || "UNKNOWN";
+        
+        newOrder.buniTransactionId = checkoutId;
         await newOrder.save();
 
         res.json({ success: true, data: response.data });
     } catch (error) {
-        console.error("Buni Error:", error.response ? error.response.data : error.message);
-        res.status(500).json({ success: false, error: "Buni payment initiation failed." });
+        const errorDetails = error.response ? JSON.stringify(error.response.data) : error.message;
+        console.error("❌ Buni Error Details:", errorDetails);
+        res.status(500).json({ success: false, error: "Buni payment initiation failed. Check logs." });
     }
 });
 
+// ================================
+// KCB BUNI — IPN CALLBACK
+// ================================
 app.post('/api/buni/ipn', async (req, res) => {
     console.log("KCB Buni IPN Received:", JSON.stringify(req.body, null, 2));
     try {
-        const { transactionReference, status, amount } = req.body;
+        const { transactionReference, status } = req.body;
         
         if (status === 'SUCCESS' || status === 'Success') {
             const updatedOrder = await Order.findOneAndUpdate(
@@ -330,7 +248,7 @@ app.post('/api/buni/ipn', async (req, res) => {
 });
 
 // ================================
-// SETTINGS ENDPOINTS
+// SETTINGS
 // ================================
 app.get('/api/settings/public', async (req, res) => {
     try {
@@ -368,7 +286,7 @@ app.put('/api/settings', requireAuth, async (req, res) => {
 });
 
 // ================================
-// CUSTOMER TRACKING
+// TRACKING
 // ================================
 app.get('/api/track/:phone', async (req, res) => {
     try {
@@ -426,7 +344,7 @@ app.delete('/api/orders/:id', requireAuth, async (req, res) => {
 });
 
 // ================================
-// START SERVER
+// START
 // ================================
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
