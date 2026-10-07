@@ -175,14 +175,18 @@ app.post('/api/buni/pay', async (req, res) => {
         if (phone.startsWith('0')) formattedPhone = '254' + phone.substring(1);
         else if (phone.startsWith('+')) formattedPhone = phone.substring(1);
 
+        // Use the environment variable for the shortcode, fallback to 522522 for testing
+        const orgShortCode = process.env.BUNI_ORG_SHORTCODE || '522522';
+        const callbackUrl = process.env.BUNI_CALLBACK_URL || 'https://columbus.onrender.com/api/buni/ipn';
+
         const buniPayload = {
             phoneNumber: formattedPhone,
-            amount: amount.toString(), // Use the amount sent from frontend (10 or 98)
+            amount: Number(amount), // KCB expects a numeric amount, not a string
             invoiceNumber: `COLUMBUS-${newOrder._id.toString().slice(-8)}`,
             sharedShortCode: true,
-            orgShortCode: process.env.BUNI_ORG_SHORTCODE || '522522',
+            orgShortCode: orgShortCode,
             orgPassKey: "",
-            callbackUrl: process.env.BUNI_CALLBACK_URL,
+            callbackUrl: callbackUrl,
             transactionDescription: "Delivery Payment"
         };
 
@@ -197,7 +201,6 @@ app.post('/api/buni/pay', async (req, res) => {
 
         console.log("✅ Buni API Response:", JSON.stringify(response.data, null, 2));
 
-        // Safely extract CheckoutRequestID (handles different possible response structures)
         const checkoutId = response.data?.response?.CheckoutRequestID 
                         || response.data?.CheckoutRequestID 
                         || response.data?.response?.MerchantRequestID 
