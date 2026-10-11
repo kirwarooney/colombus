@@ -178,8 +178,12 @@ app.post('/api/pay', async (req, res) => {
             ("0" + date.getMinutes()).slice(-2) +
             ("0" + date.getSeconds()).slice(-2);
         
-        const shortcode = process.env.MPESA_SHORTCODE;
+        // Configuration parameters
+        const shortcode = process.env.MPESA_SHORTCODE;       // Store Number: 1307207
+        const tillNumber = process.env.MPESA_TILL_NUMBER;    // Till Number: 1777517
         const passkey = process.env.MPESA_PASSKEY;
+        
+        // Password generated using the Store Shortcode + Passkey + Timestamp
         const password = Buffer.from(shortcode + passkey + timestamp).toString('base64');
 
         let formattedPhone = phone;
@@ -189,13 +193,13 @@ app.post('/api/pay', async (req, res) => {
         else formattedPhone = '254' + phone;
 
         const stkPushData = {
-            BusinessShortCode: shortcode,
+            BusinessShortCode: shortcode,                  // Store Number (1307207)
             Password: password,
             Timestamp: timestamp,
-            TransactionType: "CustomerBuyGoodsOnline",
+            TransactionType: "CustomerBuyGoodsOnline",     // Correct type for till numbers
             Amount: amount,
             PartyA: formattedPhone,
-            PartyB: shortcode,
+            PartyB: tillNumber || "1777517",               // 👈 FIX: Must be the actual Till Number (1777517)
             PhoneNumber: formattedPhone,
             CallBackURL: process.env.MPESA_CALLBACK_URL,
             AccountReference: "ColumbusDelivery",
@@ -371,7 +375,8 @@ app.delete('/api/orders/:id', requireAuth, async (req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📌 MPESA_SHORTCODE: ${process.env.MPESA_SHORTCODE ? '✅ Set' : '❌ MISSING'}`);
+    console.log(`📌 MPESA_SHORTCODE (Store): ${process.env.MPESA_SHORTCODE ? '✅ Set' : '❌ MISSING'}`);
+    console.log(`📌 MPESA_TILL_NUMBER: ${process.env.MPESA_TILL_NUMBER ? '✅ Set' : '❌ MISSING'}`);
     console.log(`📌 MPESA_CONSUMER_KEY: ${process.env.MPESA_CONSUMER_KEY ? '✅ Set' : '❌ MISSING'}`);
     console.log(`📌 MPESA_CONSUMER_SECRET: ${process.env.MPESA_CONSUMER_SECRET ? '✅ Set' : '❌ MISSING'}`);
     console.log(`📌 MPESA_PASSKEY: ${process.env.MPESA_PASSKEY ? '✅ Set' : '❌ MISSING'}`);
