@@ -1,83 +1,277 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Columbus Delivery - Order Now</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    :root {
+      --primary: #065f46;
+      --primary-dark: #044e38;
+      --accent: #f59e0b;
+      --accent-hover: #d97706;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Georgia, 'Times New Roman', serif; background: #f5f2eb; min-height: 100vh; color: #2c2c2c; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      background: var(--bg); 
+      min-height: 100vh; 
+      color: var(--text); 
+      -webkit-font-smoothing: antialiased;
+    }
     
-    /* Classic Header */
-    .hero { background: linear-gradient(180deg, #0a2342 0%, #1a3a5c 100%); color: #fff; padding: 40px 20px 60px; text-align: center; position: relative; overflow: hidden; }
-    .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,0.02) 35px, rgba(255,255,255,0.02) 70px); }
-    .hero-content { position: relative; z-index: 1; }
-    .hero h1 { font-size: 32px; font-weight: normal; letter-spacing: 3px; margin-bottom: 8px; font-family: Georgia, serif; }
-    .hero .subtitle { font-size: 13px; letter-spacing: 4px; opacity: 0.7; text-transform: uppercase; font-family: Arial, sans-serif; }
-    .hero .divider { width: 60px; height: 2px; background: #d4af37; margin: 20px auto; }
-    .track-link { display: inline-block; margin-top: 10px; color: #d4af37; text-decoration: none; border: 1px solid #d4af37; padding: 10px 24px; border-radius: 4px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; font-family: Arial, sans-serif; transition: 0.3s; }
-    .track-link:hover { background: #d4af37; color: #0a2342; }
+    /* Modern Header */
+    .hero { 
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #0f766e 100%); 
+      color: #fff; 
+      padding: 50px 20px 70px; 
+      text-align: center; 
+      position: relative; 
+      overflow: hidden; 
+    }
+    .hero::after { 
+      content: ''; 
+      position: absolute; 
+      bottom: 0; left: 0; right: 0; 
+      height: 30px; 
+      background: var(--bg); 
+      clip-path: ellipse(60% 100% at 50% 100%); 
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; }
+    .hero h1 { 
+      font-size: 30px; 
+      font-weight: 800; 
+      letter-spacing: -0.5px; 
+      margin-bottom: 6px; 
+      text-transform: uppercase;
+    }
+    .hero .subtitle { 
+      font-size: 14px; 
+      opacity: 0.9; 
+      font-weight: 400; 
+      margin-bottom: 20px;
+    }
+    .track-link { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px;
+      color: #fff; 
+      background: rgba(255, 255, 255, 0.15); 
+      backdrop-filter: blur(8px);
+      text-decoration: none; 
+      border: 1px solid rgba(255, 255, 255, 0.25); 
+      padding: 10px 22px; 
+      border-radius: 99px; 
+      font-size: 13px; 
+      font-weight: 600; 
+      transition: all 0.2s ease; 
+    }
+    .track-link:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-1px); }
     
-    .container { padding: 0 15px 60px; max-width: 560px; margin: -40px auto 0; position: relative; z-index: 2; }
-    .card { background: #fff; border-radius: 4px; padding: 30px 25px; box-shadow: 0 10px 40px rgba(10, 35, 66, 0.15); border-top: 4px solid #d4af37; }
+    .container { padding: 0 16px 60px; max-width: 520px; margin: -30px auto 0; position: relative; z-index: 2; }
+    .card { 
+      background: var(--card-bg); 
+      border-radius: 20px; 
+      padding: 28px 22px; 
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03); 
+      border: 1px solid var(--border); 
+    }
     
-    .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 3px; color: #0a2342; font-weight: bold; margin: 25px 0 15px; padding-bottom: 8px; border-bottom: 1px solid #e8e3d6; font-family: Arial, sans-serif; display: flex; align-items: center; gap: 8px; }
+    .section-title { 
+      font-size: 13px; 
+      text-transform: uppercase; 
+      letter-spacing: 0.5px; 
+      color: var(--primary); 
+      font-weight: 700; 
+      margin: 28px 0 16px; 
+      padding-bottom: 8px; 
+      border-bottom: 2px solid #f1f5f9; 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+    }
     .section-title:first-child { margin-top: 0; }
-    .section-title span { color: #d4af37; }
+    .section-title span { 
+      background: #ecfdf5; 
+      color: var(--primary); 
+      font-size: 11px; 
+      padding: 2px 8px; 
+      border-radius: 6px; 
+    }
     
-    label { display: block; font-family: Arial, sans-serif; font-weight: 600; margin-bottom: 6px; font-size: 12px; color: #555; letter-spacing: 0.5px; text-transform: uppercase; }
-    input, textarea, select { width: 100%; padding: 12px 14px; border: 1px solid #d8d2c2; border-radius: 3px; font-size: 15px; background: #fdfcf8; font-family: Georgia, serif; transition: 0.2s; color: #2c2c2c; }
-    input:focus, textarea:focus, select:focus { outline: none; border-color: #d4af37; background: #fff; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1); }
-    textarea { resize: vertical; min-height: 70px; font-family: Georgia, serif; }
+    label { 
+      display: block; 
+      font-weight: 600; 
+      margin-bottom: 6px; 
+      font-size: 13px; 
+      color: var(--text); 
+    }
+    input, textarea, select { 
+      width: 100%; 
+      padding: 12px 14px; 
+      border: 1px solid var(--border); 
+      border-radius: 10px; 
+      font-size: 14px; 
+      background: #f8fafc; 
+      font-family: inherit; 
+      transition: all 0.2s; 
+      color: var(--text); 
+    }
+    input:focus, textarea:focus, select:focus { 
+      outline: none; 
+      border-color: var(--primary); 
+      background: #fff; 
+      box-shadow: 0 0 0 3px rgba(6, 95, 70, 0.12); 
+    }
+    textarea { resize: vertical; min-height: 75px; }
     
-    .form-group { margin-bottom: 16px; }
+    .form-group { margin-bottom: 18px; }
     .form-row { display: flex; gap: 12px; }
     .form-row .form-group { flex: 1; }
-    .hint { font-size: 11px; color: #888; margin-top: 4px; font-family: Arial, sans-serif; font-style: italic; }
+    .hint { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
     
-    .pin-btn { width: 100%; padding: 12px; background: #0a2342; color: #fff; border: none; border-radius: 3px; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: 1px; font-family: Arial, sans-serif; }
-    .pin-btn:hover { background: #1a3a5c; }
-    .pin-btn.success { background: #2e7d32; }
-    .pin-status { font-size: 11px; color: #888; margin-top: 6px; text-align: center; font-family: Arial, sans-serif; }
+    .pin-btn { 
+      width: 100%; 
+      padding: 12px; 
+      background: #f1f5f9; 
+      color: var(--text); 
+      border: 1px solid var(--border); 
+      border-radius: 10px; 
+      font-size: 13px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      transition: all 0.2s; 
+    }
+    .pin-btn:hover { background: #e2e8f0; }
+    .pin-btn.success { background: #dcfce7; color: #15803d; border-color: #86efac; }
+    .pin-status { font-size: 12px; color: var(--text-muted); margin-top: 6px; text-align: center; }
     
-    /* Summary */
-    .summary { background: #fdfbf5; border: 1px solid #e8e3d6; border-radius: 3px; padding: 20px; margin-top: 20px; }
-    .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; font-family: Arial, sans-serif; color: #555; }
-    .summary-row.total { font-size: 22px; font-weight: bold; color: #0a2342; border-top: 2px solid #d4af37; padding-top: 12px; margin-top: 12px; font-family: Georgia, serif; }
-    .summary-row.total span:first-child { letter-spacing: 2px; text-transform: uppercase; font-size: 13px; font-family: Arial, sans-serif; align-self: center; }
-    .badge { background: #d4af37; color: #0a2342; font-size: 10px; padding: 3px 8px; border-radius: 2px; margin-left: 8px; letter-spacing: 1px; font-weight: bold; }
+    /* Summary Card */
+    .summary { 
+      background: #f8fafc; 
+      border: 1px solid var(--border); 
+      border-radius: 12px; 
+      padding: 18px; 
+      margin-top: 24px; 
+    }
+    .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; color: var(--text-muted); }
+    .summary-row.total { 
+      font-size: 20px; 
+      font-weight: 800; 
+      color: var(--primary); 
+      border-top: 1px dashed var(--border); 
+      padding-top: 12px; 
+      margin-top: 12px; 
+      margin-bottom: 0;
+    }
+    .summary-row.total span:first-child { 
+      font-size: 13px; 
+      text-transform: uppercase; 
+      color: var(--text); 
+      align-self: center; 
+    }
+    .badge { 
+      background: #065f46; 
+      color: #fff; 
+      font-size: 10px; 
+      padding: 2px 6px; 
+      border-radius: 4px; 
+      margin-left: 6px; 
+      font-weight: 700; 
+    }
     
-    /* Payment Options */
-    .payment-options { margin-top: 20px; padding: 18px; background: #fdfbf5; border: 1px solid #e8e3d6; border-radius: 3px; }
-    .payment-options .section-title { margin-top: 0; font-size: 11px; }
-    .payment-options label { display: flex; align-items: center; gap: 10px; font-weight: normal; margin-bottom: 12px; cursor: pointer; color: #0a2342; text-transform: none; letter-spacing: 0; font-size: 14px; font-family: Georgia, serif; }
-    .payment-options input[type="radio"] { width: auto; transform: scale(1.4); margin-right: 4px; accent-color: #d4af37; }
-    .payment-options .option-desc { font-size: 11px; color: #888; font-family: Arial, sans-serif; margin-left: 26px; margin-top: -8px; margin-bottom: 10px; font-style: italic; }
+    /* Payment Options Card */
+    .payment-options { 
+      margin-top: 20px; 
+      padding: 18px; 
+      background: #f8fafc; 
+      border: 1px solid var(--border); 
+      border-radius: 12px; 
+    }
+    .payment-options .section-title { margin-top: 0; font-size: 12px; }
+    .payment-option-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .payment-option-card:last-child { margin-bottom: 0; }
+    .payment-option-card:hover { border-color: var(--primary); }
+    .payment-options label { 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      font-weight: 600; 
+      margin-bottom: 0; 
+      cursor: pointer; 
+      color: var(--text); 
+      font-size: 14px; 
+    }
+    .payment-options input[type="radio"] { 
+      width: auto; 
+      transform: scale(1.2); 
+      accent-color: var(--primary); 
+    }
+    .payment-options .option-desc { 
+      font-size: 12px; 
+      color: var(--text-muted); 
+      margin-left: 26px; 
+      margin-top: 4px; 
+    }
     
-    .btn-pay { width: 100%; background: linear-gradient(180deg, #d4af37 0%, #b8941e 100%); color: #0a2342; border: none; padding: 18px; font-size: 15px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; border-radius: 3px; margin-top: 20px; cursor: pointer; font-family: Arial, sans-serif; box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4); transition: 0.3s; }
-    .btn-pay:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5); }
+    .btn-pay { 
+      width: 100%; 
+      background: var(--accent); 
+      color: #000; 
+      border: none; 
+      padding: 16px; 
+      font-size: 15px; 
+      font-weight: 700; 
+      letter-spacing: 0.5px; 
+      text-transform: uppercase; 
+      border-radius: 12px; 
+      margin-top: 24px; 
+      cursor: pointer; 
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35); 
+      transition: all 0.2s; 
+    }
+    .btn-pay:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45); }
     .btn-pay:active { transform: translateY(0); }
-    .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
     
     /* Result States */
-    .result { text-align: center; margin-top: 20px; padding: 20px; border-radius: 3px; font-family: Arial, sans-serif; display: none; border-left: 4px solid; }
-    .result.success { background: #e8f5e9; color: #1b5e20; border-color: #2e7d32; }
-    .result.error { background: #ffebee; color: #b71c1c; border-color: #c62828; }
-    .result.loading { background: #e3f2fd; color: #0d47a1; border-color: #1565c0; }
-    .result.warning { background: #fff8e1; color: #7f5f00; border-color: #f9a825; }
-    .result .icon { font-size: 32px; display: block; margin-bottom: 8px; }
-    .result .title { font-size: 16px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .result { text-align: center; margin-top: 20px; padding: 18px; border-radius: 12px; display: none; }
+    .result.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .result.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .result.loading { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .result.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .result .icon { font-size: 28px; display: block; margin-bottom: 6px; }
+    .result .title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
     .result .msg { font-size: 13px; line-height: 1.5; }
     
     /* Footer */
-    .footer { text-align: center; padding: 30px 20px; color: #888; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-family: Arial, sans-serif; }
-    .footer .divider { width: 40px; height: 1px; background: #d4af37; margin: 0 auto 15px; }
+    .footer { 
+      text-align: center; 
+      padding: 30px 20px; 
+      color: var(--text-muted); 
+      font-size: 12px; 
+      font-weight: 500; 
+    }
   </style>
 </head>
 <body>
   <div class="hero">
     <div class="hero-content">
       <h1 id="businessName">COLUMBUS</h1>
-      <div class="divider"></div>
       <div class="subtitle" id="footerMessage">Fast, Reliable Campus Delivery</div>
       <a href="/track.html" class="track-link">📦 Track My Order</a>
     </div>
@@ -85,7 +279,7 @@
   
   <div class="container">
     <div class="card">
-      <div class="section-title"><span>I.</span> Delivery Location</div>
+      <div class="section-title"><span>I</span> Delivery Location</div>
       
       <div class="form-row">
         <div class="form-group">
@@ -109,7 +303,7 @@
         <input id="locationPin" type="text" placeholder="e.g. Behind the main gate, blue door">
       </div>
 
-      <div class="section-title"><span>II.</span> Your Details</div>
+      <div class="section-title"><span>II</span> Your Details</div>
       
       <div class="form-group">
         <label>Your Full Name *</label>
@@ -122,7 +316,7 @@
         <div class="hint">Only Safaricom numbers accepted for online payment</div>
       </div>
 
-      <div class="section-title"><span>III.</span> Order Details</div>
+      <div class="section-title"><span>III</span> Order Details</div>
 
       <div class="form-group">
         <label>Shop Name *</label>
@@ -175,17 +369,23 @@
       </div>
 
       <div class="payment-options">
-        <div class="section-title"><span>IV.</span> Payment Choice</div>
-        <label>
-          <input type="radio" name="paymentOption" value="delivery_only" checked onchange="calculateTotal()">
-          <span>Pay <b>KES 10</b> delivery fee only — pay goods on delivery</span>
-        </label>
-        <div class="option-desc">You will pay the cost of goods to the rider in cash</div>
-        <label style="margin-bottom:0;">
-          <input type="radio" name="paymentOption" value="full_payment" onchange="calculateTotal()">
-          <span>Pay <b id="fullPaymentLabel" style="color:#0a2342;">KES 10</b> full amount now — nothing on delivery</span>
-        </label>
-        <div class="option-desc" style="margin-bottom:0;">Everything is paid upfront via M-Pesa. Clean and simple.</div>
+        <div class="section-title"><span>IV</span> Payment Choice</div>
+        
+        <div class="payment-option-card">
+          <label>
+            <input type="radio" name="paymentOption" value="delivery_only" checked onchange="calculateTotal()">
+            <span>Pay <b>KES 10</b> delivery fee only</span>
+          </label>
+          <div class="option-desc">You will pay the cost of goods to the rider in cash</div>
+        </div>
+
+        <div class="payment-option-card">
+          <label>
+            <input type="radio" name="paymentOption" value="full_payment" onchange="calculateTotal()">
+            <span>Pay <b id="fullPaymentLabel" style="color:var(--primary);">KES 10</b> full amount now</span>
+          </label>
+          <div class="option-desc">Everything is paid upfront via M-Pesa. Clean and simple.</div>
+        </div>
       </div>
 
       <button class="btn-pay" id="payBtn" onclick="payDeliveryFee()">🔒 PROCEED TO PAY</button>
@@ -194,7 +394,6 @@
   </div>
   
   <div class="footer">
-    <div class="divider"></div>
     Columbus Delivery • Powered by M-Pesa
   </div>
 
