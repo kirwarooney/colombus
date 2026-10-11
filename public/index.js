@@ -190,11 +190,17 @@ app.post('/api/pay', async (req, res) => {
         else if (phone.startsWith('+')) formattedPhone = phone.substring(1);
 
         const stkPushData = {
-            BusinessShortCode: shortcode, Password: password, Timestamp: timestamp,
-            TransactionType: "CustomerPayBillOnline", Amount: amount,
-            PartyA: formattedPhone, PartyB: shortcode, PhoneNumber: formattedPhone,
+            BusinessShortCode: shortcode, 
+            Password: password, 
+            Timestamp: timestamp,
+            TransactionType: "CustomerBuyGoodsOnline", // ⚠️ CHANGED FOR TILL/BUY GOODS
+            Amount: amount,
+            PartyA: formattedPhone, 
+            PartyB: shortcode, 
+            PhoneNumber: formattedPhone,
             CallBackURL: process.env.MPESA_CALLBACK_URL,
-            AccountReference: "ColumbusDelivery", TransactionDesc: "Delivery Payment"
+            AccountReference: "ColumbusDelivery", 
+            TransactionDesc: "Delivery Payment"
         };
 
         const response = await axios.post(`${DARAJA_BASE_URL}/mpesa/stkpush/v1/processrequest`, stkPushData, {
