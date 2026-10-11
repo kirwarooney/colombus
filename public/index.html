@@ -4,54 +4,88 @@
   <title>Columbus Delivery - Order Now</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(180deg, #0d2b45 0%, #1a4a6e 40%, #f4f4f9 40%, #f4f4f9 100%); min-height: 100vh; }
-    .hero { text-align: center; color: white; padding: 30px 20px 50px; }
-    .hero h1 { margin: 0 0 8px; font-size: 26px; }
-    .hero p { margin: 0; font-size: 14px; opacity: 0.85; }
-    .track-link { display: inline-block; margin-top: 12px; color: white; text-decoration: none; background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
-    .container { padding: 0 15px 40px; max-width: 520px; margin: auto; }
-    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-    .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #0d2b45; font-weight: 700; margin: 18px 0 10px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; background: #f5f2eb; min-height: 100vh; color: #2c2c2c; }
+    
+    /* Classic Header */
+    .hero { background: linear-gradient(180deg, #0a2342 0%, #1a3a5c 100%); color: #fff; padding: 40px 20px 60px; text-align: center; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,0.02) 35px, rgba(255,255,255,0.02) 70px); }
+    .hero-content { position: relative; z-index: 1; }
+    .hero h1 { font-size: 32px; font-weight: normal; letter-spacing: 3px; margin-bottom: 8px; font-family: Georgia, serif; }
+    .hero .subtitle { font-size: 13px; letter-spacing: 4px; opacity: 0.7; text-transform: uppercase; font-family: Arial, sans-serif; }
+    .hero .divider { width: 60px; height: 2px; background: #d4af37; margin: 20px auto; }
+    .track-link { display: inline-block; margin-top: 10px; color: #d4af37; text-decoration: none; border: 1px solid #d4af37; padding: 10px 24px; border-radius: 4px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; font-family: Arial, sans-serif; transition: 0.3s; }
+    .track-link:hover { background: #d4af37; color: #0a2342; }
+    
+    .container { padding: 0 15px 60px; max-width: 560px; margin: -40px auto 0; position: relative; z-index: 2; }
+    .card { background: #fff; border-radius: 4px; padding: 30px 25px; box-shadow: 0 10px 40px rgba(10, 35, 66, 0.15); border-top: 4px solid #d4af37; }
+    
+    .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 3px; color: #0a2342; font-weight: bold; margin: 25px 0 15px; padding-bottom: 8px; border-bottom: 1px solid #e8e3d6; font-family: Arial, sans-serif; display: flex; align-items: center; gap: 8px; }
     .section-title:first-child { margin-top: 0; }
-    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #444; }
-    input { width: 100%; padding: 12px 14px; border: 1.5px solid #e0e0e8; border-radius: 10px; font-size: 15px; background: #fafbfd; transition: 0.2s; font-family: inherit; }
-    input:focus { outline: none; border-color: #0d2b45; background: white; }
-    .form-group { margin-bottom: 14px; }
+    .section-title span { color: #d4af37; }
+    
+    label { display: block; font-family: Arial, sans-serif; font-weight: 600; margin-bottom: 6px; font-size: 12px; color: #555; letter-spacing: 0.5px; text-transform: uppercase; }
+    input, textarea, select { width: 100%; padding: 12px 14px; border: 1px solid #d8d2c2; border-radius: 3px; font-size: 15px; background: #fdfcf8; font-family: Georgia, serif; transition: 0.2s; color: #2c2c2c; }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: #d4af37; background: #fff; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1); }
+    textarea { resize: vertical; min-height: 70px; font-family: Georgia, serif; }
+    
+    .form-group { margin-bottom: 16px; }
     .form-row { display: flex; gap: 12px; }
     .form-row .form-group { flex: 1; }
+    .hint { font-size: 11px; color: #888; margin-top: 4px; font-family: Arial, sans-serif; font-style: italic; }
     
-    .pin-btn { width: 100%; padding: 12px; background: #0d2b45; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .pin-btn.success { background: #27ae60; }
-    .pin-status { font-size: 12px; color: #666; margin-top: 6px; text-align: center; }
+    .pin-btn { width: 100%; padding: 12px; background: #0a2342; color: #fff; border: none; border-radius: 3px; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: 1px; font-family: Arial, sans-serif; }
+    .pin-btn:hover { background: #1a3a5c; }
+    .pin-btn.success { background: #2e7d32; }
+    .pin-status { font-size: 11px; color: #888; margin-top: 6px; text-align: center; font-family: Arial, sans-serif; }
     
-    .summary { background: linear-gradient(135deg, #e8f0fe 0%, #d4e4fc 100%); border-radius: 12px; padding: 16px; margin-top: 16px; }
-    .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; color: #444; }
-    .summary-row.total { font-size: 20px; font-weight: 700; color: #0d2b45; border-top: 2px dashed #b8c8e0; padding-top: 10px; margin-top: 10px; }
-    .badge { background: #27ae60; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+    /* Summary */
+    .summary { background: #fdfbf5; border: 1px solid #e8e3d6; border-radius: 3px; padding: 20px; margin-top: 20px; }
+    .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; font-family: Arial, sans-serif; color: #555; }
+    .summary-row.total { font-size: 22px; font-weight: bold; color: #0a2342; border-top: 2px solid #d4af37; padding-top: 12px; margin-top: 12px; font-family: Georgia, serif; }
+    .summary-row.total span:first-child { letter-spacing: 2px; text-transform: uppercase; font-size: 13px; font-family: Arial, sans-serif; align-self: center; }
+    .badge { background: #d4af37; color: #0a2342; font-size: 10px; padding: 3px 8px; border-radius: 2px; margin-left: 8px; letter-spacing: 1px; font-weight: bold; }
     
-    .payment-options { margin-top: 15px; padding: 12px; background: #f8f9fa; border-radius: 12px; border: 1.5px solid #e0e0e8; }
-    .payment-options label { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 10px; cursor: pointer; color: #0d2b45; }
-    .payment-options input[type="radio"] { width: auto; transform: scale(1.3); margin-right: 4px; }
+    /* Payment Options */
+    .payment-options { margin-top: 20px; padding: 18px; background: #fdfbf5; border: 1px solid #e8e3d6; border-radius: 3px; }
+    .payment-options .section-title { margin-top: 0; font-size: 11px; }
+    .payment-options label { display: flex; align-items: center; gap: 10px; font-weight: normal; margin-bottom: 12px; cursor: pointer; color: #0a2342; text-transform: none; letter-spacing: 0; font-size: 14px; font-family: Georgia, serif; }
+    .payment-options input[type="radio"] { width: auto; transform: scale(1.4); margin-right: 4px; accent-color: #d4af37; }
+    .payment-options .option-desc { font-size: 11px; color: #888; font-family: Arial, sans-serif; margin-left: 26px; margin-top: -8px; margin-bottom: 10px; font-style: italic; }
     
-    .btn-pay { width: 100%; background: linear-gradient(135deg, #27ae60, #219a52); color: white; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 12px; margin-top: 18px; cursor: pointer; box-shadow: 0 4px 12px rgba(39,174,96,0.3); }
-    .btn-pay:active { transform: scale(0.98); }
-    .result { text-align: center; font-weight: 600; margin-top: 15px; padding: 12px; border-radius: 10px; }
-    .result.success { background: #d4edda; color: #155724; }
-    .result.error { background: #f8d7da; color: #721c24; }
-    .result.loading { background: #cce5ff; color: #004085; }
+    .btn-pay { width: 100%; background: linear-gradient(180deg, #d4af37 0%, #b8941e 100%); color: #0a2342; border: none; padding: 18px; font-size: 15px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; border-radius: 3px; margin-top: 20px; cursor: pointer; font-family: Arial, sans-serif; box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4); transition: 0.3s; }
+    .btn-pay:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5); }
+    .btn-pay:active { transform: translateY(0); }
+    .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
+    
+    /* Result States */
+    .result { text-align: center; margin-top: 20px; padding: 20px; border-radius: 3px; font-family: Arial, sans-serif; display: none; border-left: 4px solid; }
+    .result.success { background: #e8f5e9; color: #1b5e20; border-color: #2e7d32; }
+    .result.error { background: #ffebee; color: #b71c1c; border-color: #c62828; }
+    .result.loading { background: #e3f2fd; color: #0d47a1; border-color: #1565c0; }
+    .result.warning { background: #fff8e1; color: #7f5f00; border-color: #f9a825; }
+    .result .icon { font-size: 32px; display: block; margin-bottom: 8px; }
+    .result .title { font-size: 16px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .result .msg { font-size: 13px; line-height: 1.5; }
+    
+    /* Footer */
+    .footer { text-align: center; padding: 30px 20px; color: #888; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-family: Arial, sans-serif; }
+    .footer .divider { width: 40px; height: 1px; background: #d4af37; margin: 0 auto 15px; }
   </style>
 </head>
 <body>
   <div class="hero">
-    <h1 id="businessName">🛵 Columbus Delivery</h1>
-    <p id="footerMessage">Fast, reliable campus delivery</p>
-    <a href="/track.html" class="track-link">📦 Track My Order</a>
+    <div class="hero-content">
+      <h1 id="businessName">COLUMBUS</h1>
+      <div class="divider"></div>
+      <div class="subtitle" id="footerMessage">Fast, Reliable Campus Delivery</div>
+      <a href="/track.html" class="track-link">📦 Track My Order</a>
+    </div>
   </div>
   
   <div class="container">
     <div class="card">
-      <div class="section-title">📍 Location Details</div>
+      <div class="section-title"><span>I.</span> Delivery Location</div>
       
       <div class="form-row">
         <div class="form-group">
@@ -66,28 +100,29 @@
 
       <div class="form-group">
         <label>Pin Your Exact Location (Optional)</label>
-        <button class="pin-btn" id="pinBtn" onclick="pinLocation()">📌 Tap to Pin My Location</button>
-        <div class="pin-status" id="pinStatus">Rider will use this for accurate delivery</div>
+        <button class="pin-btn" id="pinBtn" onclick="pinLocation()">📌 TAP TO PIN MY LOCATION</button>
+        <div class="pin-status" id="pinStatus">Helps the rider find you faster</div>
       </div>
 
       <div class="form-group">
-        <label>Extra Location Note (Optional)</label>
-        <input id="locationPin" type="text" placeholder="e.g. Behind the main gate">
+        <label>Extra Location Notes (Optional)</label>
+        <input id="locationPin" type="text" placeholder="e.g. Behind the main gate, blue door">
       </div>
 
-      <div class="section-title">👤 Your Details</div>
+      <div class="section-title"><span>II.</span> Your Details</div>
       
       <div class="form-group">
-        <label>Your Name *</label>
+        <label>Your Full Name *</label>
         <input id="customerName" type="text" placeholder="e.g. John Doe">
       </div>
 
       <div class="form-group">
         <label>Phone Number (M-Pesa Safaricom) *</label>
         <input id="phone" type="tel" placeholder="e.g. 0712345678">
+        <div class="hint">Only Safaricom numbers accepted for online payment</div>
       </div>
 
-      <div class="section-title">🛒 Order Details</div>
+      <div class="section-title"><span>III.</span> Order Details</div>
 
       <div class="form-group">
         <label>Shop Name *</label>
@@ -95,24 +130,38 @@
       </div>
 
       <div class="form-group">
-        <label>What do you want? *</label>
-        <input id="itemDescription" type="text" placeholder="e.g. Chapati (Bakery)">
+        <label>What Do You Want? *</label>
+        <textarea id="itemDescription" placeholder="e.g. 2 Chapatis and 1 bottle of water"></textarea>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>Amount per Item (KES) *</label>
-          <input id="goodsAmount" type="number" placeholder="20" oninput="calculateTotal()">
-        </div>
-        <div class="form-group">
-          <label>Quantity *</label>
-          <input id="quantity" type="number" placeholder="1" oninput="calculateTotal()">
-        </div>
+      <div class="form-group">
+        <label>Total Cost of Goods (KES) *</label>
+        <input id="goodsAmount" type="number" placeholder="e.g. 50" oninput="calculateTotal()">
+        <div class="hint">Enter the total price of the items you want delivered</div>
+      </div>
+
+      <div class="form-group">
+        <label>Preferred Delivery Time *</label>
+        <select id="deliveryTime">
+          <option value="">-- Select a time --</option>
+          <option value="As soon as possible">⚡ As soon as possible</option>
+          <option value="Within 30 minutes">⏱️ Within 30 minutes</option>
+          <option value="Within 1 hour">🕐 Within 1 hour</option>
+          <option value="Within 2 hours">🕑 Within 2 hours</option>
+          <option value="This evening">🌆 This evening</option>
+          <option value="Tomorrow morning">🌅 Tomorrow morning</option>
+          <option value="Tomorrow afternoon">☀️ Tomorrow afternoon</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Extra Information (Optional)</label>
+        <textarea id="extraInfo" placeholder="e.g. Please call when you arrive. Don't bring onions."></textarea>
       </div>
 
       <div class="summary">
         <div class="summary-row">
-          <span>Goods Total</span>
+          <span>Cost of Goods</span>
           <span id="goodsTotalDisplay">KES 0</span>
         </div>
         <div class="summary-row">
@@ -126,29 +175,34 @@
       </div>
 
       <div class="payment-options">
-        <div class="section-title" style="margin-top:0; font-size:11px;">💳 Payment Options</div>
+        <div class="section-title"><span>IV.</span> Payment Choice</div>
         <label>
           <input type="radio" name="paymentOption" value="delivery_only" checked onchange="calculateTotal()">
-          Pay Delivery Fee Only (KES 10)
+          <span>Pay <b>KES 10</b> delivery fee only — pay goods on delivery</span>
         </label>
+        <div class="option-desc">You will pay the cost of goods to the rider in cash</div>
         <label style="margin-bottom:0;">
           <input type="radio" name="paymentOption" value="full_payment" onchange="calculateTotal()">
-          Pay Full Total <span id="fullPaymentLabel" style="color:#27ae60;">(KES 10)</span>
+          <span>Pay <b id="fullPaymentLabel" style="color:#0a2342;">KES 10</b> full amount now — nothing on delivery</span>
         </label>
-        <div style="font-size:11px; color:#666; margin-top:8px;" id="paymentHint">
-          💰 You pay KES 10 now (delivery fee). Goods balance is paid on delivery.
-        </div>
+        <div class="option-desc" style="margin-bottom:0;">Everything is paid upfront via M-Pesa. Clean and simple.</div>
       </div>
 
-      <button class="btn-pay" id="payBtn" onclick="payDeliveryFee()">🔒 Pay KES 10 & Place Order</button>
-      <div id="result" class="result" style="display:none;"></div>
+      <button class="btn-pay" id="payBtn" onclick="payDeliveryFee()">🔒 PROCEED TO PAY</button>
+      <div id="result" class="result"></div>
     </div>
+  </div>
+  
+  <div class="footer">
+    <div class="divider"></div>
+    Columbus Delivery • Powered by M-Pesa
   </div>
 
   <script>
     let DELIVERY_FEE = 10;
     let userLatitude = null;
     let userLongitude = null;
+    let pollInterval = null;
 
     async function loadSettings() {
       try {
@@ -156,7 +210,7 @@
         const data = await res.json();
         if (data.success) {
           DELIVERY_FEE = Number(data.settings.deliveryFee) || 10;
-          document.getElementById('businessName').innerText = '🛵 ' + data.settings.businessName;
+          document.getElementById('businessName').innerText = data.settings.businessName.toUpperCase();
           document.getElementById('footerMessage').innerText = data.settings.footerMessage;
           document.getElementById('deliveryFeeDisplay').innerText = 'KES ' + DELIVERY_FEE;
           calculateTotal();
@@ -178,12 +232,12 @@
           userLatitude = position.coords.latitude;
           userLongitude = position.coords.longitude;
           btn.classList.add('success');
-          btn.innerText = "✅ Location Pinned!";
+          btn.innerText = "✅ LOCATION PINNED";
           status.innerText = `📍 Lat: ${userLatitude.toFixed(5)}, Long: ${userLongitude.toFixed(5)}`;
           btn.disabled = false;
         },
         (error) => {
-          status.innerText = "❌ Could not get location. Please enable GPS and try again.";
+          status.innerText = "❌ Could not get location. Please enable GPS.";
           btn.disabled = false;
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -191,33 +245,66 @@
     }
 
     function calculateTotal() {
-      const goods = parseFloat(document.getElementById('goodsAmount').value) || 0;
-      const quantity = parseFloat(document.getElementById('quantity').value) || 0;
-      const goodsTotal = goods * quantity;
+      const goodsTotal = parseFloat(document.getElementById('goodsAmount').value) || 0;
       const grandTotal = goodsTotal + DELIVERY_FEE;
 
       document.getElementById('goodsTotalDisplay').innerText = "KES " + goodsTotal;
       document.getElementById('totalDisplay').innerText = "KES " + grandTotal;
-      document.getElementById('fullPaymentLabel').innerText = "(KES " + grandTotal + ")";
+      document.getElementById('fullPaymentLabel').innerText = "KES " + grandTotal;
 
       const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
       const payBtn = document.getElementById('payBtn');
-      const paymentHint = document.getElementById('paymentHint');
 
       if (paymentOption === 'delivery_only') {
-        payBtn.innerText = '🔒 Pay KES ' + DELIVERY_FEE + ' & Place Order';
-        paymentHint.innerText = '💰 You pay KES ' + DELIVERY_FEE + ' now (delivery fee). Goods balance of KES ' + goodsTotal + ' is paid on delivery.';
+        payBtn.innerText = '🔒 PAY KES ' + DELIVERY_FEE + ' & PLACE ORDER';
       } else {
-        payBtn.innerText = '🔒 Pay KES ' + grandTotal + ' & Place Order';
-        paymentHint.innerText = '💰 You pay the full amount of KES ' + grandTotal + ' now. Nothing to pay on delivery.';
+        payBtn.innerText = '🔒 PAY KES ' + grandTotal + ' & PLACE ORDER';
       }
     }
 
-    function showResult(message, type) {
+    function showResult(icon, title, message, type) {
       const result = document.getElementById('result');
       result.style.display = 'block';
       result.className = 'result ' + type;
-      result.innerText = message;
+      result.innerHTML = `
+        <span class="icon">${icon}</span>
+        <div class="title">${title}</div>
+        <div class="msg">${message}</div>
+      `;
+    }
+
+    function startPolling(orderId, amountToCharge, paymentOption) {
+      let elapsed = 0;
+      const maxWait = 90; // 90 seconds max
+      
+      if (pollInterval) clearInterval(pollInterval);
+      
+      pollInterval = setInterval(async () => {
+        elapsed += 3;
+        try {
+          const res = await fetch('/api/order-status/' + orderId);
+          const data = await res.json();
+          
+          if (data.success && data.status === 'Paid') {
+            clearInterval(pollInterval);
+            showResult('✅', 'Payment Confirmed', 
+              `Your order has been placed successfully. You have paid <b>KES ${amountToCharge}</b>.${paymentOption === 'delivery_only' ? ' Please have <b>KES ' + data.goodsAmount + '</b> ready for the rider.' : ''} We will contact you shortly.`, 
+              'success');
+          } else if (data.success && data.status === 'Failed') {
+            clearInterval(pollInterval);
+            showResult('❌', 'Payment Not Completed', 
+              `Your order was <b>NOT placed</b>. You cancelled or the M-Pesa prompt timed out. Please tap the button again and enter your M-Pesa PIN to confirm. If you need help, contact us directly.`, 
+              'error');
+          } else if (elapsed >= maxWait) {
+            clearInterval(pollInterval);
+            showResult('⏱️', 'No Response Received', 
+              `We did not receive confirmation from M-Pesa. If you entered your PIN, please wait a moment and check your M-Pesa messages. If you did not complete payment, your order was <b>NOT placed</b>. Please try again.`, 
+              'warning');
+          }
+        } catch (e) {
+          console.error('Poll error:', e);
+        }
+      }, 3000);
     }
 
     async function payDeliveryFee() {
@@ -228,33 +315,37 @@
       const phone = document.getElementById('phone').value;
       const itemDescription = document.getElementById('itemDescription').value;
       const goodsAmount = document.getElementById('goodsAmount').value;
-      const quantity = document.getElementById('quantity').value;
+      const deliveryTime = document.getElementById('deliveryTime').value;
+      const extraInfo = document.getElementById('extraInfo').value;
       const locationPin = document.getElementById('locationPin').value;
       const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
 
-      if (!hostel || !room || !customerName || !shopName || !phone || !itemDescription || !goodsAmount || !quantity) {
-        showResult("❌ Please fill in all required fields.", "error");
+      if (!hostel || !room || !customerName || !shopName || !phone || !itemDescription || !goodsAmount || !deliveryTime) {
+        showResult('⚠️', 'Missing Information', 'Please fill in all required fields marked with *', 'warning');
         return;
       }
 
-      // ⚠️ Block Airtel/Telkom
+      // Safaricom only check
       const cleanedPhone = phone.replace(/[^0-9]/g, '');
       let normalizedPhone = cleanedPhone;
       if (normalizedPhone.startsWith('254')) normalizedPhone = '0' + normalizedPhone.substring(3);
       if (normalizedPhone.startsWith('+254')) normalizedPhone = '0' + normalizedPhone.substring(4);
-      
       const safaricomPrefixes = ['070', '071', '072', '074', '075', '076', '079', '0110', '0111', '0112', '0113', '0114', '0115', '0116', '0117', '0118', '0119'];
       const isSafaricom = safaricomPrefixes.some(p => normalizedPhone.startsWith(p));
 
       if (!isSafaricom) {
-        showResult("⚠️ We currently accept only M-Pesa (Safaricom) payments online. Please enter a Safaricom number, or pay cash on delivery.", "error");
+        showResult('⚠️', 'M-Pesa Only', 'We currently accept only Safaricom M-Pesa numbers for online payments. Please enter a Safaricom number, or pay cash on delivery.', 'warning');
         return;
       }
 
-      const goodsTotal = (parseFloat(goodsAmount) || 0) * (parseFloat(quantity) || 0);
+      const goodsTotal = parseFloat(goodsAmount) || 0;
       const amountToCharge = paymentOption === 'full_payment' ? (goodsTotal + DELIVERY_FEE) : DELIVERY_FEE;
 
-      showResult("⏳ Sending payment request...", "loading");
+      const payBtn = document.getElementById('payBtn');
+      payBtn.disabled = true;
+      payBtn.innerText = '⏳ SENDING PROMPT...';
+
+      showResult('📲', 'Sending Payment Prompt', `Check your phone for the M-Pesa prompt. Enter your PIN to pay <b>KES ${amountToCharge}</b>.`, 'loading');
 
       try {
         const response = await fetch('/api/pay', {
@@ -266,7 +357,7 @@
             paymentOption: paymentOption,
             orderDetails: { 
               hostel, room, customerName, shopName, itemDescription, 
-              goodsAmount, quantity, locationPin, 
+              goodsAmount: goodsTotal, deliveryTime, extraInfo, locationPin, 
               latitude: userLatitude, longitude: userLongitude 
             }
           })
@@ -274,13 +365,18 @@
 
         const data = await response.json();
         
-        if (data.success) {
-          showResult(`✅ Order placed! Check your phone for the M-Pesa payment prompt of KES ${amountToCharge}.`, "success");
+        if (data.success && data.orderId) {
+          // Start polling for real status
+          startPolling(data.orderId, amountToCharge, paymentOption);
         } else {
-          showResult("❌ Failed: " + (data.error || "Please check the server logs."), "error");
+          payBtn.disabled = false;
+          calculateTotal();
+          showResult('❌', 'Failed to Send Prompt', 'There was a problem sending the M-Pesa prompt. Please try again or contact us.', 'error');
         }
       } catch (error) {
-        showResult("❌ Network error. Please try again.", "error");
+        payBtn.disabled = false;
+        calculateTotal();
+        showResult('❌', 'Network Error', 'Could not reach the server. Please check your internet and try again.', 'error');
       }
     }
 
