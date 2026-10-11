@@ -100,6 +100,7 @@ const orderSchema = new mongoose.Schema({
     locationPin: String, latitude: Number, longitude: Number, deliveryFee: Number,
     paymentOption: { type: String, default: 'delivery_only' },
     status: { type: String, default: 'Pending' },
+    mpesaReceipt: String, checkoutRequestID: String,
     buniTransactionId: String, buniReceipt: String,
     paymentMethod: { type: String, default: 'buni' },
     createdAt: { type: Date, default: Date.now }
@@ -128,7 +129,106 @@ io.on('connection', (socket) => {
 });
 
 // ================================
-// KCB BUNI — TOKEN
+// ENVIRONMENT CONFIGURATION (SANDBOX vs PRODUCTION)
+// ================================
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+// Daraja URLs
+const DARAJA_BASE_URL = IS_PRODUCTION 
+    ? 'https://api.safaricom.co.ke' 
+    : 'https://sandbox.safaricom.co.ke';
+
+// KCB Buni URLs
+const BUNI_TOKEN_URL = IS_PRODUCTION 
+    ? 'https://buni.kcbgroup.com/token?grant_type=client_credentials'
+    : 'https://uat.buni.kcbgroup.com/token?grant_type=client_credentials';
+const BUNI_STK_URL = IS_PRODUCTION 
+    ? 'https://buni.kcbgroup.com/mm/api/request/1.0.0/stkpush'
+    : 'https://uat.buni.kcbgroup.com/mm/api/request/1.0.0/stkpush';
+
+// ================================
+// M-PESA (SAFARICOM DARAJA)
+// ================================
+async function getMpesaAccessToken() {
+    const key = process.env.MPESA_CONSUMER_KEY;
+    const secret = process.env.MPESA_CONSUMER_SECRET;
+    const auth = Buffer.from(`${key}:${secret}`).toString('base64');
+    const response = await axios.get(`${DARAJA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials`, {
+        headers: { Authorization: `Basic ${auth}` }
+    });
+    return response.data.access_token;
+}
+
+app.post('/api/pay', async (req, res) => {
+    try {
+        const { phone, amount, orderDetails } = req.body;
+        const settings = await Settings.findOne();
+        const deliveryFee = settings ? settings.deliveryFee : 10;
+        
+        const newOrder = new Order({
+            hostel: orderDetails.hostel, room: orderDetails.room,
+            customerName: orderDetails.customerName, shopName: orderDetails.shopName,
+            phone: phone, itemDescription: orderDetails.itemDescription,
+            goodsAmount: orderDetails.goodsAmount, quantity: orderDetails.quantity,
+            locationPin: orderDetails.locationPin,
+            latitude: orderDetails.latitude, longitude: orderDetails.longitude,
+            deliveryFee: deliveryFee, status: 'Pending', paymentMethod: 'daraja'
+        });
+        await newOrder.save();
+        console.log("📦 Daraja Order saved:", newOrder._id);
+        io.emit('new-order', newOrder);
+
+        const token = await getMpesaAccessToken();
+        const date = new Date();
+        const timestamp = date.getFullYear() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2) + ("0" + date.getHours()).slice(-2) + ("0" + date.getMinutes()).slice(-2) + ("0" + date.getSeconds()).slice(-2);
+        const shortcode = process.env.MPESA_SHORTCODE;
+        const passkey = process.env.MPESA_PASSKEY;
+        const password = Buffer.from(shortcode + passkey + timestamp).toString('base64');
+
+        let formattedPhone = phone;
+        if (phone.startsWith('0')) formattedPhone = '254' + phone.substring(1);
+        else if (phone.startsWith('+')) formattedPhone = phone.substring(1);
+
+        const stkPushData = {
+            BusinessShortCode: shortcode, Password: password, Timestamp: timestamp,
+            TransactionType: "CustomerPayBillOnline", Amount: amount,
+            PartyA: formattedPhone, PartyB: shortcode, PhoneNumber: formattedPhone,
+            CallBackURL: process.env.MPESA_CALLBACK_URL,
+            AccountReference: "ColumbusDelivery", TransactionDesc: "Delivery Payment"
+        };
+
+        const response = await axios.post(`${DARAJA_BASE_URL}/mpesa/stkpush/v1/processrequest`, stkPushData, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        newOrder.checkoutRequestID = response.data.CheckoutRequestID;
+        await newOrder.save();
+        res.json({ success: true, data: response.data });
+    } catch (error) {
+        console.error("M-Pesa Error:", error.response ? error.response.data : error.message);
+        res.status(500).json({ success: false, error: "M-Pesa initiation failed." });
+    }
+});
+
+app.post('/api/callback', async (req, res) => {
+    try {
+        const callbackData = req.body.Body.stkCallback;
+        const checkoutRequestID = callbackData.CheckoutRequestID;
+        const resultCode = callbackData.ResultCode;
+        if (resultCode === 0) {
+            const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true });
+            if (updatedOrder) io.emit('order-updated', updatedOrder);
+        } else {
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { new: true });
+            if (updatedOrder) io.emit('order-updated', updatedOrder);
+        }
+    } catch (error) { console.error("Callback error:", error.message); }
+    res.json({ ResultCode: 0, ResultDesc: "Success" });
+});
+
+// ================================
+// KCB BUNI
 // ================================
 async function getBuniAccessToken() {
     const key = process.env.BUNI_CONSUMER_KEY;
@@ -136,7 +236,7 @@ async function getBuniAccessToken() {
     const auth = Buffer.from(`${key}:${secret}`).toString('base64');
     
     console.log("🔑 Requesting Buni Access Token...");
-    const response = await axios.post('https://uat.buni.kcbgroup.com/token?grant_type=client_credentials', {}, {
+    const response = await axios.post(BUNI_TOKEN_URL, {}, {
         headers: { 
             Authorization: `Basic ${auth}`,
             'Content-Type': 'application/x-www-form-urlencoded'
@@ -145,9 +245,6 @@ async function getBuniAccessToken() {
     return response.data.access_token;
 }
 
-// ================================
-// KCB BUNI — STK PUSH
-// ================================
 app.post('/api/buni/pay', async (req, res) => {
     try {
         const { phone, amount, orderDetails, paymentOption } = req.body;
@@ -191,7 +288,7 @@ app.post('/api/buni/pay', async (req, res) => {
 
         console.log("🚀 Sending to Buni API:", JSON.stringify(buniPayload, null, 2));
 
-        const response = await axios.post('https://uat.buni.kcbgroup.com/mm/api/request/1.0.0/stkpush', buniPayload, {
+        const response = await axios.post(BUNI_STK_URL, buniPayload, {
             headers: { 
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -216,9 +313,6 @@ app.post('/api/buni/pay', async (req, res) => {
     }
 });
 
-// ================================
-// KCB BUNI — IPN CALLBACK
-// ================================
 app.post('/api/buni/ipn', async (req, res) => {
     console.log("KCB Buni IPN Received:", JSON.stringify(req.body, null, 2));
     try {
