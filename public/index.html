@@ -237,7 +237,7 @@
         return;
       }
 
-      // ⚠️ Block Airtel/Telkom — we only accept M-Pesa (Safaricom)
+      // ⚠️ Block Airtel/Telkom
       const cleanedPhone = phone.replace(/[^0-9]/g, '');
       let normalizedPhone = cleanedPhone;
       if (normalizedPhone.startsWith('254')) normalizedPhone = '0' + normalizedPhone.substring(3);
