@@ -128,25 +128,29 @@ io.on('connection', (socket) => {
 });
 
 // ================================
-// M-PESA (DARAJA) — TILL SETUP
+// M-PESA — PRODUCTION (LIVE)
 // ================================
+const MPESA_BASE = 'https://api.safaricom.co.ke';
+
 async function getMpesaAccessToken() {
     const key = process.env.MPESA_CONSUMER_KEY;
     const secret = process.env.MPESA_CONSUMER_SECRET;
     const auth = Buffer.from(`${key}:${secret}`).toString('base64');
-    const url = process.env.NODE_ENV === 'production' 
-        ? 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
-        : 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
     
-    const response = await axios.get(url, {
-        headers: { Authorization: `Basic ${auth}` }
-    });
+    console.log("🔑 Requesting M-Pesa Access Token...");
+    const response = await axios.get(
+        `${MPESA_BASE}/oauth/v1/generate?grant_type=client_credentials`,
+        { headers: { Authorization: `Basic ${auth}` } }
+    );
+    console.log("✅ Access Token received");
     return response.data.access_token;
 }
 
 app.post('/api/pay', async (req, res) => {
     try {
         const { phone, amount, orderDetails, paymentOption } = req.body;
+        console.log("📥 Incoming payment request:", { phone, amount, paymentOption });
+
         const settings = await Settings.findOne();
         const deliveryFee = settings ? settings.deliveryFee : 10;
         
@@ -167,61 +171,92 @@ app.post('/api/pay', async (req, res) => {
 
         const token = await getMpesaAccessToken();
         const date = new Date();
-        const timestamp = date.getFullYear() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2) + ("0" + date.getHours()).slice(-2) + ("0" + date.getMinutes()).slice(-2) + ("0" + date.getSeconds()).slice(-2);
+        const timestamp = date.getFullYear() + 
+            ("0" + (date.getMonth() + 1)).slice(-2) +
+            ("0" + date.getDate()).slice(-2) +
+            ("0" + date.getHours()).slice(-2) +
+            ("0" + date.getMinutes()).slice(-2) +
+            ("0" + date.getSeconds()).slice(-2);
         
-        const shortcode = process.env.MPESA_SHORTCODE; // This is your Store Number: 1307207
+        const shortcode = process.env.MPESA_SHORTCODE;
         const passkey = process.env.MPESA_PASSKEY;
         const password = Buffer.from(shortcode + passkey + timestamp).toString('base64');
 
         let formattedPhone = phone;
         if (phone.startsWith('0')) formattedPhone = '254' + phone.substring(1);
         else if (phone.startsWith('+')) formattedPhone = phone.substring(1);
+        else if (phone.startsWith('254')) formattedPhone = phone;
+        else formattedPhone = '254' + phone;
 
         const stkPushData = {
-            BusinessShortCode: shortcode, 
-            Password: password, 
+            BusinessShortCode: shortcode,
+            Password: password,
             Timestamp: timestamp,
-            TransactionType: "CustomerBuyGoodsOnline", // ✅ CORRECT FOR TILL
+            TransactionType: "CustomerBuyGoodsOnline",
             Amount: amount,
-            PartyA: formattedPhone, 
-            PartyB: shortcode, 
+            PartyA: formattedPhone,
+            PartyB: shortcode,
             PhoneNumber: formattedPhone,
             CallBackURL: process.env.MPESA_CALLBACK_URL,
-            AccountReference: "ColumbusDelivery", 
+            AccountReference: "ColumbusDelivery",
             TransactionDesc: "Delivery Payment"
         };
 
-        const apiUrl = process.env.NODE_ENV === 'production'
-            ? 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
-            : 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
+        console.log("🚀 Sending STK Push to Safaricom...");
+        console.log("📤 Payload:", JSON.stringify(stkPushData, null, 2));
 
-        const response = await axios.post(apiUrl, stkPushData, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await axios.post(
+            `${MPESA_BASE}/mpesa/stkpush/v1/processrequest`,
+            stkPushData,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-        newOrder.checkoutRequestID = response.data.CheckoutRequestID;
-        await newOrder.save();
+        console.log("✅ Safaricom Response:", JSON.stringify(response.data, null, 2));
+
+        if (response.data && response.data.CheckoutRequestID) {
+            newOrder.checkoutRequestID = response.data.CheckoutRequestID;
+            await newOrder.save();
+        }
+
         res.json({ success: true, data: response.data });
     } catch (error) {
-        console.error("❌ M-Pesa Error Details:", error.response ? error.response.data : error.message);
-        res.status(500).json({ success: false, error: "M-Pesa initiation failed." });
+        console.error("❌ M-Pesa Error:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
+        res.status(500).json({ 
+            success: false, 
+            error: "M-Pesa initiation failed. Check server logs.",
+            details: error.response ? error.response.data : error.message
+        });
     }
 });
 
 app.post('/api/callback', async (req, res) => {
+    console.log("📞 M-Pesa Callback Received:", JSON.stringify(req.body, null, 2));
     try {
         const callbackData = req.body.Body.stkCallback;
         const checkoutRequestID = callbackData.CheckoutRequestID;
         const resultCode = callbackData.ResultCode;
+        
         if (resultCode === 0) {
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true });
+            const updatedOrder = await Order.findOneAndUpdate(
+                { checkoutRequestID }, 
+                { status: 'Paid', mpesaReceipt }, 
+                { new: true }
+            );
             if (updatedOrder) io.emit('order-updated', updatedOrder);
+            console.log("✅ Order marked as PAID. Receipt:", mpesaReceipt);
         } else {
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { new: true });
+            const updatedOrder = await Order.findOneAndUpdate(
+                { checkoutRequestID }, 
+                { status: 'Failed' }, 
+                { new: true }
+            );
             if (updatedOrder) io.emit('order-updated', updatedOrder);
+            console.log("❌ Order payment FAILED. Code:", resultCode);
         }
-    } catch (error) { console.error("Callback error:", error.message); }
+    } catch (error) { 
+        console.error("Callback error:", error.message); 
+    }
     res.json({ ResultCode: 0, ResultDesc: "Success" });
 });
 
@@ -244,9 +279,9 @@ app.get('/api/settings/public', async (req, res) => {
 });
 
 app.get('/api/settings', requireAuth, async (req, res) => {
-    try {
-        const settings = await Settings.findOne();
-        res.json({ success: true, settings });
+    try { 
+        const settings = await Settings.findOne(); 
+        res.json({ success: true, settings }); 
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
@@ -288,7 +323,13 @@ app.get('/api/visits', requireAuth, async (req, res) => {
         const totalVisits = await Visit.countDocuments();
         const uniqueIpsToday = await Visit.distinct('ip', { createdAt: { $gte: today } });
         const uniqueIpsTotal = await Visit.distinct('ip');
-        res.json({ success: true, todayVisits, totalVisits, uniqueToday: uniqueIpsToday.length, uniqueTotal: uniqueIpsTotal.length });
+        res.json({ 
+            success: true, 
+            todayVisits, 
+            totalVisits, 
+            uniqueToday: uniqueIpsToday.length, 
+            uniqueTotal: uniqueIpsTotal.length 
+        });
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
@@ -296,15 +337,19 @@ app.get('/api/visits', requireAuth, async (req, res) => {
 // ADMIN ORDERS
 // ================================
 app.get('/api/orders', requireAuth, async (req, res) => {
-    try {
-        const orders = await Order.find().sort({ createdAt: -1 });
-        res.json({ success: true, orders });
+    try { 
+        const orders = await Order.find().sort({ createdAt: -1 }); 
+        res.json({ success: true, orders }); 
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
 app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
     try {
-        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+        const updatedOrder = await Order.findByIdAndUpdate(
+            req.params.id, 
+            { status: req.body.status }, 
+            { new: true }
+        );
         if (!updatedOrder) return res.status(404).json({ success: false });
         io.emit('order-updated', updatedOrder);
         res.json({ success: true, order: updatedOrder });
@@ -324,4 +369,11 @@ app.delete('/api/orders/:id', requireAuth, async (req, res) => {
 // START
 // ================================
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📌 MPESA_SHORTCODE: ${process.env.MPESA_SHORTCODE ? '✅ Set' : '❌ MISSING'}`);
+    console.log(`📌 MPESA_CONSUMER_KEY: ${process.env.MPESA_CONSUMER_KEY ? '✅ Set' : '❌ MISSING'}`);
+    console.log(`📌 MPESA_CONSUMER_SECRET: ${process.env.MPESA_CONSUMER_SECRET ? '✅ Set' : '❌ MISSING'}`);
+    console.log(`📌 MPESA_PASSKEY: ${process.env.MPESA_PASSKEY ? '✅ Set' : '❌ MISSING'}`);
+    console.log(`📌 MPESA_CALLBACK_URL: ${process.env.MPESA_CALLBACK_URL || '❌ MISSING'}`);
+});
