@@ -30,7 +30,6 @@
     .summary-row.total { font-size: 20px; font-weight: 700; color: #0d2b45; border-top: 2px dashed #b8c8e0; padding-top: 10px; margin-top: 10px; }
     .badge { background: #27ae60; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
     
-    /* Payment Options */
     .payment-options { margin-top: 15px; padding: 12px; background: #f8f9fa; border-radius: 12px; border: 1.5px solid #e0e0e8; }
     .payment-options label { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 10px; cursor: pointer; color: #0d2b45; }
     .payment-options input[type="radio"] { width: auto; transform: scale(1.3); margin-right: 4px; }
@@ -84,7 +83,7 @@
       </div>
 
       <div class="form-group">
-        <label>Phone Number *</label>
+        <label>Phone Number (M-Pesa Safaricom) *</label>
         <input id="phone" type="tel" placeholder="e.g. 0712345678">
       </div>
 
@@ -126,7 +125,6 @@
         </div>
       </div>
 
-      <!-- Payment Options -->
       <div class="payment-options">
         <div class="section-title" style="margin-top:0; font-size:11px;">💳 Payment Options</div>
         <label>
@@ -152,9 +150,6 @@
     let userLatitude = null;
     let userLongitude = null;
 
-    // ================================
-    // LOAD SETTINGS FROM SERVER
-    // ================================
     async function loadSettings() {
       try {
         const res = await fetch('/api/settings/public');
@@ -169,21 +164,15 @@
       } catch (e) { console.error('Settings load error:', e); }
     }
 
-    // ================================
-    // PIN LOCATION
-    // ================================
     function pinLocation() {
       const btn = document.getElementById('pinBtn');
       const status = document.getElementById('pinStatus');
-
       if (!navigator.geolocation) {
         status.innerText = "❌ Location not supported on this device.";
         return;
       }
-
       status.innerText = "📡 Getting your location...";
       btn.disabled = true;
-
       navigator.geolocation.getCurrentPosition(
         (position) => {
           userLatitude = position.coords.latitude;
@@ -201,21 +190,16 @@
       );
     }
 
-    // ================================
-    // CALCULATE TOTAL (Dynamic based on payment option)
-    // ================================
     function calculateTotal() {
       const goods = parseFloat(document.getElementById('goodsAmount').value) || 0;
       const quantity = parseFloat(document.getElementById('quantity').value) || 0;
       const goodsTotal = goods * quantity;
       const grandTotal = goodsTotal + DELIVERY_FEE;
 
-      // Update the goods total and full total displays
       document.getElementById('goodsTotalDisplay').innerText = "KES " + goodsTotal;
       document.getElementById('totalDisplay').innerText = "KES " + grandTotal;
       document.getElementById('fullPaymentLabel').innerText = "(KES " + grandTotal + ")";
 
-      // Determine which payment option is selected
       const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
       const payBtn = document.getElementById('payBtn');
       const paymentHint = document.getElementById('paymentHint');
@@ -229,9 +213,6 @@
       }
     }
 
-    // ================================
-    // SHOW RESULT MESSAGE
-    // ================================
     function showResult(message, type) {
       const result = document.getElementById('result');
       result.style.display = 'block';
@@ -239,9 +220,6 @@
       result.innerText = message;
     }
 
-    // ================================
-    // PAY WITH KCB BUNI
-    // ================================
     async function payDeliveryFee() {
       const hostel = document.getElementById('hostel').value;
       const room = document.getElementById('room').value;
@@ -259,14 +237,27 @@
         return;
       }
 
-      // Determine the amount to charge
+      // ⚠️ Block Airtel/Telkom — we only accept M-Pesa (Safaricom)
+      const cleanedPhone = phone.replace(/[^0-9]/g, '');
+      let normalizedPhone = cleanedPhone;
+      if (normalizedPhone.startsWith('254')) normalizedPhone = '0' + normalizedPhone.substring(3);
+      if (normalizedPhone.startsWith('+254')) normalizedPhone = '0' + normalizedPhone.substring(4);
+      
+      const safaricomPrefixes = ['070', '071', '072', '074', '075', '076', '079', '0110', '0111', '0112', '0113', '0114', '0115', '0116', '0117', '0118', '0119'];
+      const isSafaricom = safaricomPrefixes.some(p => normalizedPhone.startsWith(p));
+
+      if (!isSafaricom) {
+        showResult("⚠️ We currently accept only M-Pesa (Safaricom) payments online. Please enter a Safaricom number, or pay cash on delivery.", "error");
+        return;
+      }
+
       const goodsTotal = (parseFloat(goodsAmount) || 0) * (parseFloat(quantity) || 0);
       const amountToCharge = paymentOption === 'full_payment' ? (goodsTotal + DELIVERY_FEE) : DELIVERY_FEE;
 
       showResult("⏳ Sending payment request...", "loading");
 
       try {
-        const response = await fetch('/api/buni/pay', {
+        const response = await fetch('/api/pay', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -284,7 +275,7 @@
         const data = await response.json();
         
         if (data.success) {
-          showResult(`✅ Order placed! Check your phone for the KCB Buni payment prompt of KES ${amountToCharge}.`, "success");
+          showResult(`✅ Order placed! Check your phone for the M-Pesa payment prompt of KES ${amountToCharge}.`, "success");
         } else {
           showResult("❌ Failed: " + (data.error || "Please check the server logs."), "error");
         }
@@ -293,7 +284,6 @@
       }
     }
 
-    // Load settings on page open
     loadSettings();
   </script>
 </body>
