@@ -101,8 +101,7 @@ const orderSchema = new mongoose.Schema({
     paymentOption: { type: String, default: 'delivery_only' },
     status: { type: String, default: 'Pending' },
     mpesaReceipt: String, checkoutRequestID: String,
-    buniTransactionId: String, buniReceipt: String,
-    paymentMethod: { type: String, default: 'buni' },
+    paymentMethod: { type: String, default: 'daraja' },
     createdAt: { type: Date, default: Date.now }
 });
 const Order = mongoose.model('Order', orderSchema);
@@ -129,31 +128,17 @@ io.on('connection', (socket) => {
 });
 
 // ================================
-// ENVIRONMENT CONFIGURATION (SANDBOX vs PRODUCTION)
-// ================================
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-
-// Daraja URLs
-const DARAJA_BASE_URL = IS_PRODUCTION 
-    ? 'https://api.safaricom.co.ke' 
-    : 'https://sandbox.safaricom.co.ke';
-
-// KCB Buni URLs
-const BUNI_TOKEN_URL = IS_PRODUCTION 
-    ? 'https://buni.kcbgroup.com/token?grant_type=client_credentials'
-    : 'https://uat.buni.kcbgroup.com/token?grant_type=client_credentials';
-const BUNI_STK_URL = IS_PRODUCTION 
-    ? 'https://buni.kcbgroup.com/mm/api/request/1.0.0/stkpush'
-    : 'https://uat.buni.kcbgroup.com/mm/api/request/1.0.0/stkpush';
-
-// ================================
-// M-PESA (SAFARICOM DARAJA)
+// M-PESA (DARAJA) — TILL SETUP
 // ================================
 async function getMpesaAccessToken() {
     const key = process.env.MPESA_CONSUMER_KEY;
     const secret = process.env.MPESA_CONSUMER_SECRET;
     const auth = Buffer.from(`${key}:${secret}`).toString('base64');
-    const response = await axios.get(`${DARAJA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials`, {
+    const url = process.env.NODE_ENV === 'production' 
+        ? 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
+        : 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
+    
+    const response = await axios.get(url, {
         headers: { Authorization: `Basic ${auth}` }
     });
     return response.data.access_token;
@@ -161,7 +146,7 @@ async function getMpesaAccessToken() {
 
 app.post('/api/pay', async (req, res) => {
     try {
-        const { phone, amount, orderDetails } = req.body;
+        const { phone, amount, orderDetails, paymentOption } = req.body;
         const settings = await Settings.findOne();
         const deliveryFee = settings ? settings.deliveryFee : 10;
         
@@ -172,7 +157,9 @@ app.post('/api/pay', async (req, res) => {
             goodsAmount: orderDetails.goodsAmount, quantity: orderDetails.quantity,
             locationPin: orderDetails.locationPin,
             latitude: orderDetails.latitude, longitude: orderDetails.longitude,
-            deliveryFee: deliveryFee, status: 'Pending', paymentMethod: 'daraja'
+            deliveryFee: deliveryFee, 
+            paymentOption: paymentOption || 'delivery_only',
+            status: 'Pending', paymentMethod: 'daraja'
         });
         await newOrder.save();
         console.log("📦 Daraja Order saved:", newOrder._id);
@@ -181,7 +168,8 @@ app.post('/api/pay', async (req, res) => {
         const token = await getMpesaAccessToken();
         const date = new Date();
         const timestamp = date.getFullYear() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2) + ("0" + date.getHours()).slice(-2) + ("0" + date.getMinutes()).slice(-2) + ("0" + date.getSeconds()).slice(-2);
-        const shortcode = process.env.MPESA_SHORTCODE;
+        
+        const shortcode = process.env.MPESA_SHORTCODE; // This is your Store Number: 1307207
         const passkey = process.env.MPESA_PASSKEY;
         const password = Buffer.from(shortcode + passkey + timestamp).toString('base64');
 
@@ -190,14 +178,24 @@ app.post('/api/pay', async (req, res) => {
         else if (phone.startsWith('+')) formattedPhone = phone.substring(1);
 
         const stkPushData = {
-            BusinessShortCode: shortcode, Password: password, Timestamp: timestamp,
-            TransactionType: "CustomerPayBillOnline", Amount: amount,
-            PartyA: formattedPhone, PartyB: shortcode, PhoneNumber: formattedPhone,
+            BusinessShortCode: shortcode, 
+            Password: password, 
+            Timestamp: timestamp,
+            TransactionType: "CustomerBuyGoodsOnline", // ✅ CORRECT FOR TILL
+            Amount: amount,
+            PartyA: formattedPhone, 
+            PartyB: shortcode, 
+            PhoneNumber: formattedPhone,
             CallBackURL: process.env.MPESA_CALLBACK_URL,
-            AccountReference: "ColumbusDelivery", TransactionDesc: "Delivery Payment"
+            AccountReference: "ColumbusDelivery", 
+            TransactionDesc: "Delivery Payment"
         };
 
-        const response = await axios.post(`${DARAJA_BASE_URL}/mpesa/stkpush/v1/processrequest`, stkPushData, {
+        const apiUrl = process.env.NODE_ENV === 'production'
+            ? 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
+            : 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
+
+        const response = await axios.post(apiUrl, stkPushData, {
             headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -205,7 +203,7 @@ app.post('/api/pay', async (req, res) => {
         await newOrder.save();
         res.json({ success: true, data: response.data });
     } catch (error) {
-        console.error("M-Pesa Error:", error.response ? error.response.data : error.message);
+        console.error("❌ M-Pesa Error Details:", error.response ? error.response.data : error.message);
         res.status(500).json({ success: false, error: "M-Pesa initiation failed." });
     }
 });
@@ -225,122 +223,6 @@ app.post('/api/callback', async (req, res) => {
         }
     } catch (error) { console.error("Callback error:", error.message); }
     res.json({ ResultCode: 0, ResultDesc: "Success" });
-});
-
-// ================================
-// KCB BUNI
-// ================================
-async function getBuniAccessToken() {
-    const key = process.env.BUNI_CONSUMER_KEY;
-    const secret = process.env.BUNI_CONSUMER_SECRET;
-    const auth = Buffer.from(`${key}:${secret}`).toString('base64');
-    
-    console.log("🔑 Requesting Buni Access Token...");
-    const response = await axios.post(BUNI_TOKEN_URL, {}, {
-        headers: { 
-            Authorization: `Basic ${auth}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-    });
-    return response.data.access_token;
-}
-
-app.post('/api/buni/pay', async (req, res) => {
-    try {
-        const { phone, amount, orderDetails, paymentOption } = req.body;
-        const settings = await Settings.findOne();
-        const deliveryFee = settings ? settings.deliveryFee : 10;
-        
-        const newOrder = new Order({
-            hostel: orderDetails.hostel, room: orderDetails.room,
-            customerName: orderDetails.customerName, shopName: orderDetails.shopName,
-            phone: phone, itemDescription: orderDetails.itemDescription,
-            goodsAmount: orderDetails.goodsAmount, quantity: orderDetails.quantity,
-            locationPin: orderDetails.locationPin,
-            latitude: orderDetails.latitude, longitude: orderDetails.longitude,
-            deliveryFee: deliveryFee, 
-            paymentOption: paymentOption || 'delivery_only',
-            status: 'Pending', paymentMethod: 'buni'
-        });
-        await newOrder.save();
-        console.log("📦 Buni Order saved:", newOrder._id);
-        io.emit('new-order', newOrder);
-
-        const token = await getBuniAccessToken();
-        
-        let formattedPhone = phone;
-        if (phone.startsWith('0')) formattedPhone = '254' + phone.substring(1);
-        else if (phone.startsWith('+')) formattedPhone = phone.substring(1);
-
-        const callbackUrl = process.env.BUNI_CALLBACK_URL || 'https://columbus.onrender.com/api/buni/ipn';
-        const accountNumber = process.env.BUNI_ACCOUNT_NUMBER || '1234567';
-
-        const buniPayload = {
-            phoneNumber: formattedPhone,
-            amount: Number(amount),
-            invoiceNumber: `${accountNumber}-COLUMBUS-${newOrder._id.toString().slice(-8)}`,
-            sharedShortCode: true,
-            orgShortCode: "",
-            orgPassKey: "",
-            callbackUrl: callbackUrl,
-            transactionDescription: "Delivery Payment"
-        };
-
-        console.log("🚀 Sending to Buni API:", JSON.stringify(buniPayload, null, 2));
-
-        const response = await axios.post(BUNI_STK_URL, buniPayload, {
-            headers: { 
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        console.log("✅ Buni API Response:", JSON.stringify(response.data, null, 2));
-
-        const checkoutId = response.data?.response?.CheckoutRequestID 
-                        || response.data?.CheckoutRequestID 
-                        || response.data?.response?.MerchantRequestID 
-                        || "UNKNOWN";
-        
-        newOrder.buniTransactionId = checkoutId;
-        await newOrder.save();
-
-        res.json({ success: true, data: response.data });
-    } catch (error) {
-        const errorDetails = error.response ? JSON.stringify(error.response.data) : error.message;
-        console.error("❌ Buni Error Details:", errorDetails);
-        res.status(500).json({ success: false, error: "Buni payment initiation failed. Check logs." });
-    }
-});
-
-app.post('/api/buni/ipn', async (req, res) => {
-    console.log("KCB Buni IPN Received:", JSON.stringify(req.body, null, 2));
-    try {
-        const { transactionReference, status } = req.body;
-        
-        if (status === 'SUCCESS' || status === 'Success') {
-            const updatedOrder = await Order.findOneAndUpdate(
-                { buniTransactionId: transactionReference },
-                { status: 'Paid', buniReceipt: transactionReference },
-                { new: true }
-            );
-            if (updatedOrder) {
-                io.emit('order-updated', updatedOrder);
-                console.log("✅ Buni order marked as PAID");
-            }
-        } else {
-            const updatedOrder = await Order.findOneAndUpdate(
-                { buniTransactionId: transactionReference },
-                { status: 'Failed' },
-                { new: true }
-            );
-            if (updatedOrder) io.emit('order-updated', updatedOrder);
-            console.log("❌ Buni order payment FAILED");
-        }
-    } catch (error) {
-        console.error("Error processing Buni IPN:", error.message);
-    }
-    res.status(200).json({ success: true });
 });
 
 // ================================
@@ -376,7 +258,6 @@ app.put('/api/settings', requireAuth, async (req, res) => {
             { businessName, deliveryFee: Number(deliveryFee), contactPhone, footerMessage },
             { new: true, upsert: true }
         );
-        console.log("⚙️ Settings updated:", settings);
         res.json({ success: true, settings });
     } catch (error) { res.status(500).json({ success: false, error: error.message }); }
 });
