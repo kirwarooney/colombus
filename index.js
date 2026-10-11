@@ -98,6 +98,8 @@ const orderSchema = new mongoose.Schema({
     hostel: String, room: String, customerName: String, shopName: String,
     phone: String, itemDescription: String, goodsAmount: Number, quantity: Number,
     locationPin: String, latitude: Number, longitude: Number, deliveryFee: Number,
+    deliveryTime: String,
+    extraInfo: String,
     paymentOption: { type: String, default: 'delivery_only' },
     status: { type: String, default: 'Pending' },
     mpesaReceipt: String, checkoutRequestID: String,
@@ -161,6 +163,8 @@ app.post('/api/pay', async (req, res) => {
             goodsAmount: orderDetails.goodsAmount, quantity: orderDetails.quantity,
             locationPin: orderDetails.locationPin,
             latitude: orderDetails.latitude, longitude: orderDetails.longitude,
+            deliveryTime: orderDetails.deliveryTime,
+            extraInfo: orderDetails.extraInfo,
             deliveryFee: deliveryFee, 
             paymentOption: paymentOption || 'delivery_only',
             status: 'Pending', paymentMethod: 'daraja'
@@ -193,13 +197,13 @@ app.post('/api/pay', async (req, res) => {
         else formattedPhone = '254' + phone;
 
         const stkPushData = {
-            BusinessShortCode: shortcode,                  // Store Number (1307207)
+            BusinessShortCode: shortcode,
             Password: password,
             Timestamp: timestamp,
-            TransactionType: "CustomerBuyGoodsOnline",     // Correct type for till numbers
+            TransactionType: "CustomerBuyGoodsOnline",
             Amount: amount,
             PartyA: formattedPhone,
-            PartyB: tillNumber || "1777517",               // 👈 FIX: Must be the actual Till Number (1777517)
+            PartyB: tillNumber || "1777517",
             PhoneNumber: formattedPhone,
             CallBackURL: process.env.MPESA_CALLBACK_URL,
             AccountReference: "ColumbusDelivery",
@@ -222,7 +226,12 @@ app.post('/api/pay', async (req, res) => {
             await newOrder.save();
         }
 
-        res.json({ success: true, data: response.data });
+        // Return orderId so the frontend can poll for status
+        res.json({ 
+            success: true, 
+            orderId: newOrder._id, 
+            data: response.data 
+        });
     } catch (error) {
         console.error("❌ M-Pesa Error:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
         res.status(500).json({ 
@@ -262,6 +271,24 @@ app.post('/api/callback', async (req, res) => {
         console.error("Callback error:", error.message); 
     }
     res.json({ ResultCode: 0, ResultDesc: "Success" });
+});
+
+// ================================
+// ORDER STATUS (for customer polling)
+// ================================
+app.get('/api/order-status/:id', async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ success: false });
+        res.json({ 
+            success: true, 
+            status: order.status,
+            goodsAmount: order.goodsAmount,
+            deliveryFee: order.deliveryFee
+        });
+    } catch (error) { 
+        res.status(500).json({ success: false }); 
+    }
 });
 
 // ================================
