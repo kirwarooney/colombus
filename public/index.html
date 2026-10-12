@@ -26,11 +26,11 @@
       -webkit-font-smoothing: antialiased;
     }
     
-    /* Compact Header */
+    /* Ultra-Compact Header */
     .hero { 
       background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #0f766e 100%); 
       color: #fff; 
-      padding: 24px 15px 45px; 
+      padding: 14px 10px 28px; 
       text-align: center; 
       position: relative; 
       overflow: hidden; 
@@ -39,146 +39,132 @@
       content: ''; 
       position: absolute; 
       bottom: 0; left: 0; right: 0; 
-      height: 20px; 
+      height: 12px; 
       background: var(--bg); 
       clip-path: ellipse(60% 100% at 50% 100%); 
     }
-    .hero-content { position: relative; z-index: 1; max-width: 450px; margin: 0 auto; }
+    .hero-content { position: relative; z-index: 1; max-width: 420px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
     .hero h1 { 
-      font-size: 22px; 
+      font-size: 16px; 
       font-weight: 800; 
       letter-spacing: -0.5px; 
-      margin-bottom: 2px; 
       text-transform: uppercase;
     }
-    .hero .subtitle { 
-      font-size: 12px; 
-      opacity: 0.9; 
-      font-weight: 400; 
-      margin-bottom: 12px;
-    }
+    .hero .subtitle { display: none; }
     .track-link { 
-      display: inline-flex; 
-      align-items: center; 
-      gap: 4px;
       color: #fff; 
       background: rgba(255, 255, 255, 0.15); 
       backdrop-filter: blur(8px);
       text-decoration: none; 
       border: 1px solid rgba(255, 255, 255, 0.25); 
-      padding: 6px 16px; 
+      padding: 4px 10px; 
       border-radius: 99px; 
-      font-size: 11px; 
+      font-size: 10px; 
       font-weight: 600; 
-      transition: all 0.2s ease; 
     }
-    .track-link:hover { background: rgba(255, 255, 255, 0.25); }
     
-    /* Compact 0.75 Scale Wrapper */
+    /* Half Screen Compact Layout */
     .container { 
-      padding: 0 10px 30px; 
-      max-width: 480px; 
-      margin: -25px auto 0; 
+      padding: 0 8px 15px; 
+      max-width: 440px; 
+      margin: -15px auto 0; 
       position: relative; 
       z-index: 2; 
     }
     .card { 
       background: var(--card-bg); 
-      border-radius: 16px; 
-      padding: 16px 14px; 
-      box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.06); 
+      border-radius: 12px; 
+      padding: 10px; 
+      box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05); 
       border: 1px solid var(--border); 
     }
     
     .section-title { 
-      font-size: 11px; 
+      font-size: 10px; 
       text-transform: uppercase; 
       letter-spacing: 0.5px; 
       color: var(--primary); 
       font-weight: 700; 
-      margin: 16px 0 10px; 
-      padding-bottom: 4px; 
+      margin: 10px 0 6px; 
+      padding-bottom: 2px; 
       border-bottom: 1px solid #f1f5f9; 
       display: flex; 
       align-items: center; 
-      gap: 6px; 
+      gap: 4px; 
     }
     .section-title:first-child { margin-top: 0; }
     .section-title span { 
       background: #ecfdf5; 
       color: var(--primary); 
-      font-size: 10px; 
-      padding: 1px 6px; 
-      border-radius: 4px; 
+      font-size: 9px; 
+      padding: 1px 4px; 
+      border-radius: 3px; 
     }
     
     label { 
       display: block; 
       font-weight: 600; 
-      margin-bottom: 4px; 
-      font-size: 11px; 
+      margin-bottom: 2px; 
+      font-size: 10px; 
       color: var(--text); 
     }
     input, textarea, select { 
       width: 100%; 
-      padding: 8px 10px; 
+      padding: 5px 8px; 
       border: 1px solid var(--border); 
-      border-radius: 8px; 
-      font-size: 13px; 
+      border-radius: 6px; 
+      font-size: 11px; 
       background: #f8fafc; 
       font-family: inherit; 
-      transition: all 0.2s; 
       color: var(--text); 
     }
     input:focus, textarea:focus, select:focus { 
       outline: none; 
       border-color: var(--primary); 
       background: #fff; 
-      box-shadow: 0 0 0 2px rgba(6, 95, 70, 0.12); 
+      box-shadow: 0 0 0 2px rgba(6, 95, 70, 0.1); 
     }
-    textarea { resize: vertical; min-height: 50px; }
+    textarea { resize: vertical; min-height: 32px; }
     
-    .form-group { margin-bottom: 10px; }
-    .form-row { display: flex; gap: 8px; }
+    .form-group { margin-bottom: 6px; }
+    .form-row { display: flex; gap: 6px; }
     .form-row .form-group { flex: 1; }
-    .hint { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .hint { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
     
     .pin-btn { 
       width: 100%; 
-      padding: 8px; 
+      padding: 6px; 
       background: #f1f5f9; 
       color: var(--text); 
       border: 1px solid var(--border); 
-      border-radius: 8px; 
-      font-size: 11px; 
+      border-radius: 6px; 
+      font-size: 10px; 
       font-weight: 600; 
       cursor: pointer; 
-      transition: all 0.2s; 
     }
-    .pin-btn:hover { background: #e2e8f0; }
     .pin-btn.success { background: #dcfce7; color: #15803d; border-color: #86efac; }
-    .pin-status { font-size: 10px; color: var(--text-muted); margin-top: 3px; text-align: center; }
+    .pin-status { font-size: 9px; color: var(--text-muted); margin-top: 2px; text-align: center; }
     
     /* Summary Card */
     .summary { 
       background: #f8fafc; 
       border: 1px solid var(--border); 
-      border-radius: 10px; 
-      padding: 12px; 
-      margin-top: 14px; 
+      border-radius: 8px; 
+      padding: 8px; 
+      margin-top: 8px; 
     }
-    .summary-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: var(--text-muted); }
+    .summary-row { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; color: var(--text-muted); }
     .summary-row.total { 
-      font-size: 16px; 
+      font-size: 13px; 
       font-weight: 800; 
       color: var(--primary); 
       border-top: 1px dashed var(--border); 
-      padding-top: 8px; 
-      margin-top: 8px; 
+      padding-top: 4px; 
+      margin-top: 4px; 
       margin-bottom: 0;
     }
     .summary-row.total span:first-child { 
-      font-size: 11px; 
+      font-size: 9px; 
       text-transform: uppercase; 
       color: var(--text); 
       align-self: center; 
@@ -186,53 +172,51 @@
     .badge { 
       background: #065f46; 
       color: #fff; 
-      font-size: 9px; 
-      padding: 1px 5px; 
-      border-radius: 3px; 
-      margin-left: 4px; 
+      font-size: 8px; 
+      padding: 1px 4px; 
+      border-radius: 2px; 
+      margin-left: 3px; 
       font-weight: 700; 
     }
     
     /* Payment Options Card */
     .payment-options { 
-      margin-top: 12px; 
-      padding: 12px; 
+      margin-top: 8px; 
+      padding: 8px; 
       background: #f8fafc; 
       border: 1px solid var(--border); 
-      border-radius: 10px; 
+      border-radius: 8px; 
     }
-    .payment-options .section-title { margin-top: 0; font-size: 11px; }
+    .payment-options .section-title { margin-top: 0; font-size: 10px; }
     .payment-option-card {
       background: #fff;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px;
-      margin-bottom: 6px;
+      border-radius: 6px;
+      padding: 5px 6px;
+      margin-bottom: 4px;
       cursor: pointer;
-      transition: all 0.2s;
     }
     .payment-option-card:last-child { margin-bottom: 0; }
-    .payment-option-card:hover { border-color: var(--primary); }
     .payment-options label { 
       display: flex; 
       align-items: center; 
-      gap: 8px; 
+      gap: 6px; 
       font-weight: 600; 
       margin-bottom: 0; 
       cursor: pointer; 
       color: var(--text); 
-      font-size: 12px; 
+      font-size: 10px; 
     }
     .payment-options input[type="radio"] { 
       width: auto; 
-      transform: scale(1.1); 
+      transform: scale(1.0); 
       accent-color: var(--primary); 
     }
     .payment-options .option-desc { 
-      font-size: 10px; 
+      font-size: 9px; 
       color: var(--text-muted); 
-      margin-left: 20px; 
-      margin-top: 2px; 
+      margin-left: 16px; 
+      margin-top: 1px; 
     }
     
     .btn-pay { 
@@ -240,37 +224,34 @@
       background: var(--accent); 
       color: #000; 
       border: none; 
-      padding: 12px; 
-      font-size: 13px; 
+      padding: 9px; 
+      font-size: 11px; 
       font-weight: 700; 
       letter-spacing: 0.5px; 
       text-transform: uppercase; 
-      border-radius: 10px; 
-      margin-top: 14px; 
+      border-radius: 8px; 
+      margin-top: 10px; 
       cursor: pointer; 
-      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3); 
-      transition: all 0.2s; 
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25); 
     }
-    .btn-pay:hover { background: var(--accent-hover); }
-    .btn-pay:active { transform: translateY(0); }
     .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
     
     /* Result States */
-    .result { text-align: center; margin-top: 12px; padding: 12px; border-radius: 10px; display: none; }
+    .result { text-align: center; margin-top: 8px; padding: 8px; border-radius: 8px; display: none; }
     .result.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
     .result.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
     .result.loading { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
     .result.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
-    .result .icon { font-size: 22px; display: block; margin-bottom: 4px; }
-    .result .title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
-    .result .msg { font-size: 11px; line-height: 1.4; }
+    .result .icon { font-size: 18px; display: block; margin-bottom: 2px; }
+    .result .title { font-size: 11px; font-weight: 700; margin-bottom: 1px; }
+    .result .msg { font-size: 10px; line-height: 1.3; }
     
     /* Footer */
     .footer { 
       text-align: center; 
-      padding: 15px 10px; 
+      padding: 10px 5px; 
       color: var(--text-muted); 
-      font-size: 10px; 
+      font-size: 9px; 
       font-weight: 500; 
     }
   </style>
@@ -279,8 +260,7 @@
   <div class="hero">
     <div class="hero-content">
       <h1 id="businessName">COLUMBUS</h1>
-      <div class="subtitle" id="footerMessage">Fast, Reliable Campus Delivery</div>
-      <a href="/track.html" class="track-link">📦 Track My Order</a>
+      <a href="/track.html" class="track-link">📦 Track Order</a>
     </div>
   </div>
   
@@ -300,34 +280,41 @@
       </div>
 
       <div class="form-group">
-        <label>Pin Your Exact Location (Optional)</label>
-        <button class="pin-btn" id="pinBtn" onclick="pinLocation()">📌 TAP TO PIN MY LOCATION</button>
-        <div class="pin-status" id="pinStatus">Helps the rider find you faster</div>
+        <label>Pin Your Exact Location *</label>
+        <button class="pin-btn" id="pinBtn" onclick="pinLocation()">📌 TAP TO PIN MY LOCATION *</button>
+        <div class="pin-status" id="pinStatus">Location pin is mandatory to order</div>
       </div>
 
       <div class="form-group">
         <label>Extra Location Notes (Optional)</label>
-        <input id="locationPin" type="text" placeholder="e.g. Behind the main gate, blue door">
+        <input id="locationPin" type="text" placeholder="e.g. Behind main gate, blue door">
       </div>
 
       <div class="section-title"><span>II</span> Your Details</div>
       
-      <div class="form-group">
-        <label>Your Full Name *</label>
-        <input id="customerName" type="text" placeholder="e.g. John Doe">
-      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input id="customerName" type="text" placeholder="e.g. John Doe">
+        </div>
 
-      <div class="form-group">
-        <label>Phone Number (M-Pesa Safaricom) *</label>
-        <input id="phone" type="tel" placeholder="e.g. 0712345678">
-        <div class="hint">Only Safaricom numbers accepted for online payment</div>
+        <div class="form-group">
+          <label>Phone Number (M-Pesa) *</label>
+          <input id="phone" type="tel" placeholder="e.g. 0712345678">
+        </div>
       </div>
 
       <div class="section-title"><span>III</span> Order Details</div>
 
-      <div class="form-group">
-        <label>Shop Name *</label>
-        <input id="shopName" type="text" placeholder="e.g. Keneth Kenray">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Shop Name *</label>
+          <input id="shopName" type="text" placeholder="e.g. Keneth Kenray">
+        </div>
+        <div class="form-group">
+          <label>Cost of Goods (KES) *</label>
+          <input id="goodsAmount" type="number" placeholder="e.g. 50" oninput="calculateTotal()">
+        </div>
       </div>
 
       <div class="form-group">
@@ -335,29 +322,21 @@
         <textarea id="itemDescription" placeholder="e.g. 2 Chapatis and 1 bottle of water"></textarea>
       </div>
 
-      <div class="form-group">
-        <label>Total Cost of Goods (KES) *</label>
-        <input id="goodsAmount" type="number" placeholder="e.g. 50" oninput="calculateTotal()">
-        <div class="hint">Enter the total price of the items you want delivered</div>
-      </div>
-
-      <div class="form-group">
-        <label>Preferred Delivery Time *</label>
-        <select id="deliveryTime">
-          <option value="">-- Select a time --</option>
-          <option value="As soon as possible">⚡ As soon as possible</option>
-          <option value="Within 30 minutes">⏱️ Within 30 minutes</option>
-          <option value="Within 1 hour">🕐 Within 1 hour</option>
-          <option value="Within 2 hours">🕑 Within 2 hours</option>
-          <option value="This evening">🌆 This evening</option>
-          <option value="Tomorrow morning">🌅 Tomorrow morning</option>
-          <option value="Tomorrow afternoon">☀️ Tomorrow afternoon</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Extra Information (Optional)</label>
-        <textarea id="extraInfo" placeholder="e.g. Please call when you arrive. Don't bring onions."></textarea>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Preferred Delivery Time *</label>
+          <select id="deliveryTime">
+            <option value="">-- Select --</option>
+            <option value="As soon as possible">⚡ As soon as possible</option>
+            <option value="Within 30 minutes">⏱️ Within 30 min</option>
+            <option value="Within 1 hour">🕐 Within 1 hour</option>
+            <option value="This evening">🌆 This evening</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Extra Info (Optional)</label>
+          <input id="extraInfo" type="text" placeholder="e.g. Call when here">
+        </div>
       </div>
 
       <div class="summary">
@@ -383,7 +362,7 @@
             <input type="radio" name="paymentOption" value="delivery_only" checked onchange="calculateTotal()">
             <span>Pay <b>KES 10</b> delivery fee only</span>
           </label>
-          <div class="option-desc">You will pay the cost of goods to the rider in cash</div>
+          <div class="option-desc">Pay cost of goods to rider in cash</div>
         </div>
 
         <div class="payment-option-card">
@@ -391,7 +370,7 @@
             <input type="radio" name="paymentOption" value="full_payment" onchange="calculateTotal()">
             <span>Pay <b id="fullPaymentLabel" style="color:var(--primary);">KES 10</b> full amount now</span>
           </label>
-          <div class="option-desc">Everything is paid upfront via M-Pesa. Clean and simple.</div>
+          <div class="option-desc">Everything paid upfront via M-Pesa</div>
         </div>
       </div>
 
@@ -417,7 +396,6 @@
         if (data.success) {
           DELIVERY_FEE = Number(data.settings.deliveryFee) || 10;
           document.getElementById('businessName').innerText = data.settings.businessName.toUpperCase();
-          document.getElementById('footerMessage').innerText = data.settings.footerMessage;
           document.getElementById('deliveryFeeDisplay').innerText = 'KES ' + DELIVERY_FEE;
           calculateTotal();
         }
@@ -431,7 +409,7 @@
         status.innerText = "❌ Location not supported on this device.";
         return;
       }
-      status.innerText = "📡 Getting your location...";
+      status.innerText = "📡 Getting location...";
       btn.disabled = true;
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -439,11 +417,11 @@
           userLongitude = position.coords.longitude;
           btn.classList.add('success');
           btn.innerText = "✅ LOCATION PINNED";
-          status.innerText = `📍 Lat: ${userLatitude.toFixed(5)}, Long: ${userLongitude.toFixed(5)}`;
+          status.innerText = `📍 Lat: ${userLatitude.toFixed(4)}, Long: ${userLongitude.toFixed(4)}`;
           btn.disabled = false;
         },
         (error) => {
-          status.innerText = "❌ Could not get location. Please enable GPS.";
+          status.innerText = "❌ Could not get location. Enable GPS.";
           btn.disabled = false;
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -499,19 +477,19 @@
           
           if (data.success && data.status === 'Paid') {
             clearInterval(pollInterval);
-            resetPayButton(); // Unlock button for new order
+            resetPayButton();
             showResult('✅', 'Payment Confirmed', 
               `Your order has been placed successfully. You have paid <b>KES ${amountToCharge}</b>.${paymentOption === 'delivery_only' ? ' Please have <b>KES ' + data.goodsAmount + '</b> ready for the rider.' : ''} We will contact you shortly.`, 
               'success');
           } else if (data.success && data.status === 'Failed') {
             clearInterval(pollInterval);
-            resetPayButton(); // 👈 FIX: Unlock button on failure so customer can try again!
+            resetPayButton();
             showResult('❌', 'Payment Not Completed', 
               `Your order was <b>NOT placed</b>. You cancelled or the M-Pesa prompt timed out. Please tap the button again and enter your M-Pesa PIN to confirm. If you need help, contact us directly.`, 
               'error');
           } else if (elapsed >= maxWait) {
             clearInterval(pollInterval);
-            resetPayButton(); // 👈 FIX: Unlock button on timeout
+            resetPayButton();
             showResult('⏱️', 'No Response Received', 
               `We did not receive confirmation from M-Pesa. If you entered your PIN, please wait a moment and check your M-Pesa messages. If you did not complete payment, your order was <b>NOT placed</b>. Please try again.`, 
               'warning');
@@ -535,6 +513,12 @@
       const locationPin = document.getElementById('locationPin').value;
       const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
 
+      // Mandatory GPS location check
+      if (userLatitude === null || userLongitude === null) {
+        showResult('📍', 'Location Pin Required', 'Please tap "TAP TO PIN MY LOCATION" to capture your exact GPS coordinates before placing your order.', 'warning');
+        return;
+      }
+
       if (!hostel || !room || !customerName || !shopName || !phone || !itemDescription || !goodsAmount || !deliveryTime) {
         showResult('⚠️', 'Missing Information', 'Please fill in all required fields marked with *', 'warning');
         return;
@@ -549,7 +533,7 @@
       const isSafaricom = safaricomPrefixes.some(p => normalizedPhone.startsWith(p));
 
       if (!isSafaricom) {
-        showResult('⚠️', 'M-Pesa Only', 'We currently accept only Safaricom M-Pesa numbers for online payments. Please enter a Safaricom number, or pay cash on delivery.', 'warning');
+        showResult('⚠️', 'M-Pesa Only', 'We currently accept only Safaricom M-Pesa numbers for online payments. Please enter a Safaricom number.', 'warning');
         return;
       }
 
@@ -581,14 +565,13 @@
         const data = await response.json();
         
         if (data.success && data.orderId) {
-          // Start polling for real status
           startPolling(data.orderId, amountToCharge, paymentOption);
         } else {
-          resetPayButton(); // 👈 FIX: Unlock button on server error
+          resetPayButton();
           showResult('❌', 'Failed to Send Prompt', 'There was a problem sending the M-Pesa prompt. Please try again or contact us.', 'error');
         }
       } catch (error) {
-        resetPayButton(); // 👈 FIX: Unlock button on network error
+        resetPayButton();
         showResult('❌', 'Network Error', 'Could not reach the server. Please check your internet and try again.', 'error');
       }
     }
