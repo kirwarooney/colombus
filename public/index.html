@@ -26,11 +26,11 @@
       -webkit-font-smoothing: antialiased;
     }
     
-    /* Modern Header */
+    /* Compact Header */
     .hero { 
       background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #0f766e 100%); 
       color: #fff; 
-      padding: 50px 20px 70px; 
+      padding: 24px 15px 45px; 
       text-align: center; 
       position: relative; 
       overflow: hidden; 
@@ -39,85 +39,92 @@
       content: ''; 
       position: absolute; 
       bottom: 0; left: 0; right: 0; 
-      height: 30px; 
+      height: 20px; 
       background: var(--bg); 
       clip-path: ellipse(60% 100% at 50% 100%); 
     }
-    .hero-content { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; }
+    .hero-content { position: relative; z-index: 1; max-width: 450px; margin: 0 auto; }
     .hero h1 { 
-      font-size: 30px; 
+      font-size: 22px; 
       font-weight: 800; 
       letter-spacing: -0.5px; 
-      margin-bottom: 6px; 
+      margin-bottom: 2px; 
       text-transform: uppercase;
     }
     .hero .subtitle { 
-      font-size: 14px; 
+      font-size: 12px; 
       opacity: 0.9; 
       font-weight: 400; 
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
     .track-link { 
       display: inline-flex; 
       align-items: center; 
-      gap: 6px;
+      gap: 4px;
       color: #fff; 
       background: rgba(255, 255, 255, 0.15); 
       backdrop-filter: blur(8px);
       text-decoration: none; 
       border: 1px solid rgba(255, 255, 255, 0.25); 
-      padding: 10px 22px; 
+      padding: 6px 16px; 
       border-radius: 99px; 
-      font-size: 13px; 
+      font-size: 11px; 
       font-weight: 600; 
       transition: all 0.2s ease; 
     }
-    .track-link:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-1px); }
+    .track-link:hover { background: rgba(255, 255, 255, 0.25); }
     
-    .container { padding: 0 16px 60px; max-width: 520px; margin: -30px auto 0; position: relative; z-index: 2; }
+    /* Compact 0.75 Scale Wrapper */
+    .container { 
+      padding: 0 10px 30px; 
+      max-width: 480px; 
+      margin: -25px auto 0; 
+      position: relative; 
+      z-index: 2; 
+    }
     .card { 
       background: var(--card-bg); 
-      border-radius: 20px; 
-      padding: 28px 22px; 
-      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03); 
+      border-radius: 16px; 
+      padding: 16px 14px; 
+      box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.06); 
       border: 1px solid var(--border); 
     }
     
     .section-title { 
-      font-size: 13px; 
+      font-size: 11px; 
       text-transform: uppercase; 
       letter-spacing: 0.5px; 
       color: var(--primary); 
       font-weight: 700; 
-      margin: 28px 0 16px; 
-      padding-bottom: 8px; 
-      border-bottom: 2px solid #f1f5f9; 
+      margin: 16px 0 10px; 
+      padding-bottom: 4px; 
+      border-bottom: 1px solid #f1f5f9; 
       display: flex; 
       align-items: center; 
-      gap: 8px; 
+      gap: 6px; 
     }
     .section-title:first-child { margin-top: 0; }
     .section-title span { 
       background: #ecfdf5; 
       color: var(--primary); 
-      font-size: 11px; 
-      padding: 2px 8px; 
-      border-radius: 6px; 
+      font-size: 10px; 
+      padding: 1px 6px; 
+      border-radius: 4px; 
     }
     
     label { 
       display: block; 
       font-weight: 600; 
-      margin-bottom: 6px; 
-      font-size: 13px; 
+      margin-bottom: 4px; 
+      font-size: 11px; 
       color: var(--text); 
     }
     input, textarea, select { 
       width: 100%; 
-      padding: 12px 14px; 
+      padding: 8px 10px; 
       border: 1px solid var(--border); 
-      border-radius: 10px; 
-      font-size: 14px; 
+      border-radius: 8px; 
+      font-size: 13px; 
       background: #f8fafc; 
       font-family: inherit; 
       transition: all 0.2s; 
@@ -127,51 +134,51 @@
       outline: none; 
       border-color: var(--primary); 
       background: #fff; 
-      box-shadow: 0 0 0 3px rgba(6, 95, 70, 0.12); 
+      box-shadow: 0 0 0 2px rgba(6, 95, 70, 0.12); 
     }
-    textarea { resize: vertical; min-height: 75px; }
+    textarea { resize: vertical; min-height: 50px; }
     
-    .form-group { margin-bottom: 18px; }
-    .form-row { display: flex; gap: 12px; }
+    .form-group { margin-bottom: 10px; }
+    .form-row { display: flex; gap: 8px; }
     .form-row .form-group { flex: 1; }
-    .hint { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
+    .hint { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
     
     .pin-btn { 
       width: 100%; 
-      padding: 12px; 
+      padding: 8px; 
       background: #f1f5f9; 
       color: var(--text); 
       border: 1px solid var(--border); 
-      border-radius: 10px; 
-      font-size: 13px; 
+      border-radius: 8px; 
+      font-size: 11px; 
       font-weight: 600; 
       cursor: pointer; 
       transition: all 0.2s; 
     }
     .pin-btn:hover { background: #e2e8f0; }
     .pin-btn.success { background: #dcfce7; color: #15803d; border-color: #86efac; }
-    .pin-status { font-size: 12px; color: var(--text-muted); margin-top: 6px; text-align: center; }
+    .pin-status { font-size: 10px; color: var(--text-muted); margin-top: 3px; text-align: center; }
     
     /* Summary Card */
     .summary { 
       background: #f8fafc; 
       border: 1px solid var(--border); 
-      border-radius: 12px; 
-      padding: 18px; 
-      margin-top: 24px; 
+      border-radius: 10px; 
+      padding: 12px; 
+      margin-top: 14px; 
     }
-    .summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; color: var(--text-muted); }
+    .summary-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: var(--text-muted); }
     .summary-row.total { 
-      font-size: 20px; 
+      font-size: 16px; 
       font-weight: 800; 
       color: var(--primary); 
       border-top: 1px dashed var(--border); 
-      padding-top: 12px; 
-      margin-top: 12px; 
+      padding-top: 8px; 
+      margin-top: 8px; 
       margin-bottom: 0;
     }
     .summary-row.total span:first-child { 
-      font-size: 13px; 
+      font-size: 11px; 
       text-transform: uppercase; 
       color: var(--text); 
       align-self: center; 
@@ -179,28 +186,28 @@
     .badge { 
       background: #065f46; 
       color: #fff; 
-      font-size: 10px; 
-      padding: 2px 6px; 
-      border-radius: 4px; 
-      margin-left: 6px; 
+      font-size: 9px; 
+      padding: 1px 5px; 
+      border-radius: 3px; 
+      margin-left: 4px; 
       font-weight: 700; 
     }
     
     /* Payment Options Card */
     .payment-options { 
-      margin-top: 20px; 
-      padding: 18px; 
+      margin-top: 12px; 
+      padding: 12px; 
       background: #f8fafc; 
       border: 1px solid var(--border); 
-      border-radius: 12px; 
+      border-radius: 10px; 
     }
-    .payment-options .section-title { margin-top: 0; font-size: 12px; }
+    .payment-options .section-title { margin-top: 0; font-size: 11px; }
     .payment-option-card {
       background: #fff;
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 10px;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 6px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -209,23 +216,23 @@
     .payment-options label { 
       display: flex; 
       align-items: center; 
-      gap: 10px; 
+      gap: 8px; 
       font-weight: 600; 
       margin-bottom: 0; 
       cursor: pointer; 
       color: var(--text); 
-      font-size: 14px; 
+      font-size: 12px; 
     }
     .payment-options input[type="radio"] { 
       width: auto; 
-      transform: scale(1.2); 
+      transform: scale(1.1); 
       accent-color: var(--primary); 
     }
     .payment-options .option-desc { 
-      font-size: 12px; 
+      font-size: 10px; 
       color: var(--text-muted); 
-      margin-left: 26px; 
-      margin-top: 4px; 
+      margin-left: 20px; 
+      margin-top: 2px; 
     }
     
     .btn-pay { 
@@ -233,37 +240,37 @@
       background: var(--accent); 
       color: #000; 
       border: none; 
-      padding: 16px; 
-      font-size: 15px; 
+      padding: 12px; 
+      font-size: 13px; 
       font-weight: 700; 
       letter-spacing: 0.5px; 
       text-transform: uppercase; 
-      border-radius: 12px; 
-      margin-top: 24px; 
+      border-radius: 10px; 
+      margin-top: 14px; 
       cursor: pointer; 
-      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35); 
+      box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3); 
       transition: all 0.2s; 
     }
-    .btn-pay:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45); }
+    .btn-pay:hover { background: var(--accent-hover); }
     .btn-pay:active { transform: translateY(0); }
-    .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
     
     /* Result States */
-    .result { text-align: center; margin-top: 20px; padding: 18px; border-radius: 12px; display: none; }
+    .result { text-align: center; margin-top: 12px; padding: 12px; border-radius: 10px; display: none; }
     .result.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
     .result.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
     .result.loading { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
     .result.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
-    .result .icon { font-size: 28px; display: block; margin-bottom: 6px; }
-    .result .title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-    .result .msg { font-size: 13px; line-height: 1.5; }
+    .result .icon { font-size: 22px; display: block; margin-bottom: 4px; }
+    .result .title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+    .result .msg { font-size: 11px; line-height: 1.4; }
     
     /* Footer */
     .footer { 
       text-align: center; 
-      padding: 30px 20px; 
+      padding: 15px 10px; 
       color: var(--text-muted); 
-      font-size: 12px; 
+      font-size: 10px; 
       font-weight: 500; 
     }
   </style>
@@ -472,6 +479,12 @@
       `;
     }
 
+    function resetPayButton() {
+      const payBtn = document.getElementById('payBtn');
+      payBtn.disabled = false;
+      calculateTotal();
+    }
+
     function startPolling(orderId, amountToCharge, paymentOption) {
       let elapsed = 0;
       const maxWait = 90; // 90 seconds max
@@ -486,16 +499,19 @@
           
           if (data.success && data.status === 'Paid') {
             clearInterval(pollInterval);
+            resetPayButton(); // Unlock button for new order
             showResult('✅', 'Payment Confirmed', 
               `Your order has been placed successfully. You have paid <b>KES ${amountToCharge}</b>.${paymentOption === 'delivery_only' ? ' Please have <b>KES ' + data.goodsAmount + '</b> ready for the rider.' : ''} We will contact you shortly.`, 
               'success');
           } else if (data.success && data.status === 'Failed') {
             clearInterval(pollInterval);
+            resetPayButton(); // 👈 FIX: Unlock button on failure so customer can try again!
             showResult('❌', 'Payment Not Completed', 
               `Your order was <b>NOT placed</b>. You cancelled or the M-Pesa prompt timed out. Please tap the button again and enter your M-Pesa PIN to confirm. If you need help, contact us directly.`, 
               'error');
           } else if (elapsed >= maxWait) {
             clearInterval(pollInterval);
+            resetPayButton(); // 👈 FIX: Unlock button on timeout
             showResult('⏱️', 'No Response Received', 
               `We did not receive confirmation from M-Pesa. If you entered your PIN, please wait a moment and check your M-Pesa messages. If you did not complete payment, your order was <b>NOT placed</b>. Please try again.`, 
               'warning');
@@ -568,13 +584,11 @@
           // Start polling for real status
           startPolling(data.orderId, amountToCharge, paymentOption);
         } else {
-          payBtn.disabled = false;
-          calculateTotal();
+          resetPayButton(); // 👈 FIX: Unlock button on server error
           showResult('❌', 'Failed to Send Prompt', 'There was a problem sending the M-Pesa prompt. Please try again or contact us.', 'error');
         }
       } catch (error) {
-        payBtn.disabled = false;
-        calculateTotal();
+        resetPayButton(); // 👈 FIX: Unlock button on network error
         showResult('❌', 'Network Error', 'Could not reach the server. Please check your internet and try again.', 'error');
       }
     }
