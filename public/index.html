@@ -1,503 +1,241 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Columbus Delivery - Order Now</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    :root {
-      --primary: #065f46;
-      --primary-dark: #044e38;
-      --accent: #f59e0b;
-      --accent-hover: #d97706;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background: #f4f6f9; min-height: 100vh; color: #333; position: relative; overflow-x: hidden; }
+    
+    /* --- Top Header --- */
+    .top-header { background: #0a2342; color: white; padding: 15px 20px; display: flex; align-items: center; gap: 15px; font-size: 20px; font-weight: bold; }
+    .top-header span { font-size: 24px; cursor: pointer; }
+    
+    /* --- Category Bar --- */
+    .category-bar { background: #0a2342; padding: 0 20px 15px; display: flex; gap: 10px; overflow-x: auto; }
+    .cat-pill { padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; }
+    .cat-pill.active { background: #0a2342; color: white; border: 1px solid white; }
+    .cat-pill.inactive { background: #e0e0e0; color: #333; }
+    
+    /* --- Main Action Buttons --- */
+    .action-buttons-container { padding: 20px; display: flex; gap: 15px; justify-content: center; }
+    .btn-action { flex: 1; padding: 15px; border-radius: 30px; border: none; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+    .btn-sell { background: #ffc107; color: #0a2342; }
+    .btn-order { background: #0a2342; color: white; }
+    
+    /* --- Product Card --- */
+    .product-list { padding: 0 20px 40px; }
+    .product-card { background: white; border-radius: 15px; padding: 15px; display: flex; gap: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
+    .product-img { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; }
+    .product-info { flex: 1; }
+    .product-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 4px; }
+    .product-price { font-size: 15px; font-weight: bold; color: #27ae60; margin-bottom: 4px; }
+    .product-location { font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+    .product-actions { display: flex; gap: 8px; }
+    .p-btn { padding: 6px 12px; border-radius: 5px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; color: white; }
+    .p-btn-details { background: #7f8c8d; }
+    .p-btn-order { background: #2ecc71; }
+    .p-btn-book { background: #0a2342; }
+    
+    /* --- Bottom Nav --- */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 10; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: #777; gap: 4px; text-decoration: none; }
+    .nav-item.active { color: #0a2342; font-weight: bold; }
+    .nav-item span { font-size: 20px; }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-      background: var(--bg); 
-      min-height: 100vh; 
-      color: var(--text); 
-      -webkit-font-smoothing: antialiased;
-    }
+    /* =========================================
+       MODAL / ORDER FORM STYLES
+       ========================================= */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; display: none; align-items: flex-end; justify-content: center; }
+    .modal-overlay.active { display: flex; }
     
-    /* Ultra-Compact Header */
-    .hero { 
-      background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #0f766e 100%); 
-      color: #fff; 
-      padding: 14px 10px 28px; 
-      text-align: center; 
-      position: relative; 
-      overflow: hidden; 
-    }
-    .hero::after { 
-      content: ''; 
-      position: absolute; 
-      bottom: 0; left: 0; right: 0; 
-      height: 12px; 
-      background: var(--bg); 
-      clip-path: ellipse(60% 100% at 50% 100%); 
-    }
-    .hero-content { position: relative; z-index: 1; max-width: 420px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
-    .hero h1 { 
-      font-size: 16px; 
-      font-weight: 800; 
-      letter-spacing: -0.5px; 
-      text-transform: uppercase;
-    }
-    .hero .subtitle { display: none; }
-    .track-link { 
-      color: #fff; 
-      background: rgba(255, 255, 255, 0.15); 
-      backdrop-filter: blur(8px);
-      text-decoration: none; 
-      border: 1px solid rgba(255, 255, 255, 0.25); 
-      padding: 4px 10px; 
-      border-radius: 99px; 
-      font-size: 10px; 
-      font-weight: 600; 
-    }
+    .modal-content { background: #fff; width: 100%; max-width: 500px; height: 90%; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.3s ease-out; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     
-    /* Half Screen Compact Layout */
-    .container { 
-      padding: 0 8px 15px; 
-      max-width: 440px; 
-      margin: -15px auto 0; 
-      position: relative; 
-      z-index: 2; 
-    }
-    .card { 
-      background: var(--card-bg); 
-      border-radius: 12px; 
-      padding: 10px; 
-      box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05); 
-      border: 1px solid var(--border); 
-    }
+    .modal-header { background: #4d90fe; color: white; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; position: relative; }
+    .modal-header span { font-size: 20px; margin-right: 5px; }
+    .close-modal { position: absolute; right: 15px; top: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; font-weight: bold; }
     
-    .section-title { 
-      font-size: 10px; 
-      text-transform: uppercase; 
-      letter-spacing: 0.5px; 
-      color: var(--primary); 
-      font-weight: 700; 
-      margin: 10px 0 6px; 
-      padding-bottom: 2px; 
-      border-bottom: 1px solid #f1f5f9; 
-      display: flex; 
-      align-items: center; 
-      gap: 4px; 
-    }
-    .section-title:first-child { margin-top: 0; }
-    .section-title span { 
-      background: #ecfdf5; 
-      color: var(--primary); 
-      font-size: 9px; 
-      padding: 1px 4px; 
-      border-radius: 3px; 
-    }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
     
-    label { 
-      display: block; 
-      font-weight: 600; 
-      margin-bottom: 2px; 
-      font-size: 10px; 
-      color: var(--text); 
-    }
-    input, textarea, select { 
-      width: 100%; 
-      padding: 5px 8px; 
-      border: 1px solid var(--border); 
-      border-radius: 6px; 
-      font-size: 11px; 
-      background: #f8fafc; 
-      font-family: inherit; 
-      color: var(--text); 
-    }
-    input:focus, textarea:focus, select:focus { 
-      outline: none; 
-      border-color: var(--primary); 
-      background: #fff; 
-      box-shadow: 0 0 0 2px rgba(6, 95, 70, 0.1); 
-    }
-    textarea { resize: vertical; min-height: 32px; }
+    /* Form Inputs */
+    .form-row { display: flex; gap: 10px; margin-bottom: 15px; }
+    .form-group { flex: 1; margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 13px; font-weight: bold; color: #0a2342; margin-bottom: 5px; }
+    .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; background: #fafafa; outline: none; transition: 0.2s; }
+    .form-group input:focus, .form-group textarea:focus { border-color: #4d90fe; background: white; }
     
-    .form-group { margin-bottom: 6px; }
-    .form-row { display: flex; gap: 6px; }
-    .form-row .form-group { flex: 1; }
-    .hint { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+    /* Total Box */
+    .total-box { background: #e3f2fd; border: 2px solid #4d90fe; border-radius: 12px; padding: 15px; text-align: center; margin: 20px 0; }
+    .total-box h3 { color: #0a2342; font-size: 22px; margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
     
-    .pin-btn { 
-      width: 100%; 
-      padding: 6px; 
-      background: #f1f5f9; 
-      color: var(--text); 
-      border: 1px solid var(--border); 
-      border-radius: 6px; 
-      font-size: 10px; 
-      font-weight: 600; 
-      cursor: pointer; 
-    }
-    .pin-btn.success { background: #dcfce7; color: #15803d; border-color: #86efac; }
-    .pin-status { font-size: 9px; color: var(--text-muted); margin-top: 2px; text-align: center; }
+    /* Manual Payment Box (Green) */
+    .manual-pay-box { border: 2px dashed #27ae60; background: #e8f8f5; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 20px; }
+    .manual-pay-box h4 { color: #27ae60; font-size: 16px; margin-bottom: 10px; }
+    .manual-pay-buttons { display: flex; gap: 10px; justify-content: center; }
+    .manual-pay-buttons button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; }
+    .btn-dial { background: #27ae60; }
+    .btn-copy { background: #4d90fe; }
     
-    /* Summary Card */
-    .summary { 
-      background: #f8fafc; 
-      border: 1px solid var(--border); 
-      border-radius: 8px; 
-      padding: 8px; 
-      margin-top: 8px; 
-    }
-    .summary-row { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; color: var(--text-muted); }
-    .summary-row.total { 
-      font-size: 13px; 
-      font-weight: 800; 
-      color: var(--primary); 
-      border-top: 1px dashed var(--border); 
-      padding-top: 4px; 
-      margin-top: 4px; 
-      margin-bottom: 0;
-    }
-    .summary-row.total span:first-child { 
-      font-size: 9px; 
-      text-transform: uppercase; 
-      color: var(--text); 
-      align-self: center; 
-    }
-    .badge { 
-      background: #065f46; 
-      color: #fff; 
-      font-size: 8px; 
-      padding: 1px 4px; 
-      border-radius: 2px; 
-      margin-left: 3px; 
-      font-weight: 700; 
-    }
+    /* Book Now Button */
+    .btn-book-now { width: 100%; background: #4d90fe; color: white; border: none; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-book-now:active { background: #3a7bd5; }
+    .btn-book-now:disabled { background: #95a5a6; cursor: not-allowed; }
     
-    /* Payment Options Card */
-    .payment-options { 
-      margin-top: 8px; 
-      padding: 8px; 
-      background: #f8fafc; 
-      border: 1px solid var(--border); 
-      border-radius: 8px; 
-    }
-    .payment-options .section-title { margin-top: 0; font-size: 10px; }
-    .payment-option-card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 5px 6px;
-      margin-bottom: 4px;
-      cursor: pointer;
-    }
-    .payment-option-card:last-child { margin-bottom: 0; }
-    .payment-options label { 
-      display: flex; 
-      align-items: center; 
-      gap: 6px; 
-      font-weight: 600; 
-      margin-bottom: 0; 
-      cursor: pointer; 
-      color: var(--text); 
-      font-size: 10px; 
-    }
-    .payment-options input[type="radio"] { 
-      width: auto; 
-      transform: scale(1.0); 
-      accent-color: var(--primary); 
-    }
-    .payment-options .option-desc { 
-      font-size: 9px; 
-      color: var(--text-muted); 
-      margin-left: 16px; 
-      margin-top: 1px; 
-    }
+    .btn-back-text { text-align: center; color: #7f8c8d; font-size: 14px; cursor: pointer; margin-bottom: 20px; display: block; text-decoration: none; }
     
-    .btn-pay { 
-      width: 100%; 
-      background: var(--accent); 
-      color: #000; 
-      border: none; 
-      padding: 9px; 
-      font-size: 11px; 
-      font-weight: 700; 
-      letter-spacing: 0.5px; 
-      text-transform: uppercase; 
-      border-radius: 8px; 
-      margin-top: 10px; 
-      cursor: pointer; 
-      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25); 
-    }
-    .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
-    
-    /* Result States */
-    .result { text-align: center; margin-top: 8px; padding: 8px; border-radius: 8px; display: none; }
-    .result.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-    .result.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-    .result.loading { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
-    .result.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
-    .result .icon { font-size: 18px; display: block; margin-bottom: 2px; }
-    .result .title { font-size: 11px; font-weight: 700; margin-bottom: 1px; }
-    .result .msg { font-size: 10px; line-height: 1.3; }
-    
-    /* Footer */
-    .footer { 
-      text-align: center; 
-      padding: 10px 5px; 
-      color: var(--text-muted); 
-      font-size: 9px; 
-      font-weight: 500; 
-    }
+    /* Result Message */
+    .result { text-align: center; font-weight: bold; margin-top: 15px; padding: 12px; border-radius: 10px; display: none; font-size: 14px; }
+    .result.success { background: #d4edda; color: #155724; display: block; }
+    .result.error { background: #f8d7da; color: #721c24; display: block; }
+    .result.loading { background: #cce5ff; color: #004085; display: block; }
   </style>
 </head>
 <body>
-  <div class="hero">
-    <div class="hero-content">
-      <h1 id="businessName">COLUMBUS</h1>
-      <a href="/track.html" class="track-link">📦 Track Order</a>
+
+  <!-- MAIN LANDING PAGE -->
+  <div id="landingPage">
+    <div class="top-header">
+      <span>←</span> Food & Meals
+    </div>
+    
+    <div class="category-bar">
+      <button class="cat-pill active">All</button>
+      <button class="cat-pill inactive">Meals</button>
+      <button class="cat-pill inactive">Snacks</button>
+      <button class="cat-pill inactive">Drinks</button>
+    </div>
+
+    <div class="action-buttons-container">
+      <button class="btn-action btn-sell">➕ Sell Food</button>
+      <button class="btn-action btn-order" onclick="openModal()">🛒 Order Items</button>
+    </div>
+
+    <div class="product-list">
+      <div class="product-card">
+        <img src="https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=200&auto=format&fit=crop" alt="Chapati" class="product-img">
+        <div class="product-info">
+          <div class="product-title">Chapati (Bakery)</div>
+          <div class="product-price">Ksh 20</div>
+          <div class="product-location">📍 Cherika</div>
+          <div class="product-actions">
+            <button class="p-btn p-btn-details">ℹ️ Details</button>
+            <button class="p-btn p-btn-order" onclick="openModal()">🚚 Order</button>
+            <button class="p-btn p-btn-book" onclick="openModal()">🕒 Book</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <a href="#" class="nav-item"><span>🏠</span>Home</a>
+      <a href="#" class="nav-item"><span>🤍</span>Saved</a>
+      <a href="#" class="nav-item"><span>➕</span>Sell</a>
+      <a href="#" class="nav-item active"><span>🍽️</span>Food</a>
     </div>
   </div>
-  
-  <div class="container">
-    <div class="card">
-      <div class="section-title"><span>I</span> Delivery Location</div>
+
+  <!-- ORDER MODAL -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span>📝</span> Order Details
+        <button class="close-modal" onclick="closeModal()">×</button>
+      </div>
       
-      <div class="form-row">
-        <div class="form-group">
-          <label>Hostel Name *</label>
-          <input id="hostel" type="text" placeholder="e.g. Mandela">
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Hostel Name *</label>
+            <input id="hostel" type="text" placeholder="e.g. Mandela">
+          </div>
+          <div class="form-group">
+            <label>Room Number *</label>
+            <input id="room" type="text" placeholder="e.g. 10">
+          </div>
         </div>
+
         <div class="form-group">
-          <label>Room Number *</label>
-          <input id="room" type="text" placeholder="e.g. 10">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Pin Your Exact Location *</label>
-        <button class="pin-btn" id="pinBtn" onclick="pinLocation()">📌 TAP TO PIN MY LOCATION *</button>
-        <div class="pin-status" id="pinStatus">Location pin is mandatory to order</div>
-      </div>
-
-      <div class="form-group">
-        <label>Extra Location Notes (Optional)</label>
-        <input id="locationPin" type="text" placeholder="e.g. Behind main gate, blue door">
-      </div>
-
-      <div class="section-title"><span>II</span> Your Details</div>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label>Full Name *</label>
+          <label>Your Name *</label>
           <input id="customerName" type="text" placeholder="e.g. John Doe">
         </div>
 
         <div class="form-group">
-          <label>Phone Number (M-Pesa) *</label>
+          <label>Shop Name *</label>
+          <input id="shopName" type="text" placeholder="Any Shop" value="Any Shop">
+        </div>
+
+        <div class="form-group">
+          <label>Phone Number *</label>
           <input id="phone" type="tel" placeholder="e.g. 0712345678">
         </div>
-      </div>
 
-      <div class="section-title"><span>III</span> Order Details</div>
-
-      <div class="form-row">
         <div class="form-group">
-          <label>Shop Name *</label>
-          <input id="shopName" type="text" placeholder="e.g. Keneth Kenray">
+          <label>What do you want? *</label>
+          <textarea id="itemDescription" placeholder="e.g. 2 Chapatis">General Order</textarea>
         </div>
-        <div class="form-group">
-          <label>Cost of Goods (KES) *</label>
-          <input id="goodsAmount" type="number" placeholder="e.g. 50" oninput="calculateTotal()">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount for Goods (KES) *</label>
+            <input id="goodsAmount" type="number" placeholder="0" value="0" oninput="calculateTotal()">
+          </div>
+          <div class="form-group">
+            <label>Quantity *</label>
+            <input id="quantity" type="number" placeholder="1" value="1" oninput="calculateTotal()">
+          </div>
         </div>
+
+        <!-- Total -->
+        <div class="total-box">
+          <h3>💰 Total: <span id="totalDisplay">10</span> KES</h3>
+        </div>
+
+        <!-- Manual Pay Info (Visual as requested) -->
+        <div class="manual-pay-box">
+          <h4>Step 1: Pay to <span style="color:#0a2342;">0719516573</span></h4>
+          <div class="manual-pay-buttons">
+            <button class="btn-dial" onclick="window.location.href='tel:*334%23'">📞 Dial *334#</button>
+            <button class="btn-copy" onclick="copyNumber()">📋 Copy No.</button>
+          </div>
+        </div>
+
+        <!-- Book Now -->
+        <button class="btn-book-now" id="payBtn" onclick="payDeliveryFee()">✅ Book Now</button>
+        <a class="btn-back-text" onclick="closeModal()">← Back</a>
+
+        <div id="result" class="result"></div>
       </div>
-
-      <div class="form-group">
-        <label>What Do You Want? *</label>
-        <textarea id="itemDescription" placeholder="e.g. 2 Chapatis and 1 bottle of water"></textarea>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Preferred Delivery Time *</label>
-          <select id="deliveryTime">
-            <option value="">-- Select --</option>
-            <option value="As soon as possible">⚡ As soon as possible</option>
-            <option value="Within 30 minutes">⏱️ Within 30 min</option>
-            <option value="Within 1 hour">🕐 Within 1 hour</option>
-            <option value="This evening">🌆 This evening</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Extra Info (Optional)</label>
-          <input id="extraInfo" type="text" placeholder="e.g. Call when here">
-        </div>
-      </div>
-
-      <div class="summary">
-        <div class="summary-row">
-          <span>Cost of Goods</span>
-          <span id="goodsTotalDisplay">KES 0</span>
-        </div>
-        <div class="summary-row">
-          <span>Delivery Fee <span class="badge">FIXED</span></span>
-          <span id="deliveryFeeDisplay">KES 10</span>
-        </div>
-        <div class="summary-row total">
-          <span>Total</span>
-          <span id="totalDisplay">KES 10</span>
-        </div>
-      </div>
-
-      <div class="payment-options">
-        <div class="section-title"><span>IV</span> Payment Choice</div>
-        
-        <div class="payment-option-card">
-          <label>
-            <input type="radio" name="paymentOption" value="delivery_only" checked onchange="calculateTotal()">
-            <span>Pay <b>KES 10</b> delivery fee only</span>
-          </label>
-          <div class="option-desc">Pay cost of goods to rider in cash</div>
-        </div>
-
-        <div class="payment-option-card">
-          <label>
-            <input type="radio" name="paymentOption" value="full_payment" onchange="calculateTotal()">
-            <span>Pay <b id="fullPaymentLabel" style="color:var(--primary);">KES 10</b> full amount now</span>
-          </label>
-          <div class="option-desc">Everything paid upfront via M-Pesa</div>
-        </div>
-      </div>
-
-      <button class="btn-pay" id="payBtn" onclick="payDeliveryFee()">🔒 PROCEED TO PAY</button>
-      <div id="result" class="result"></div>
     </div>
-  </div>
-  
-  <div class="footer">
-    Columbus Delivery • Powered by M-Pesa
   </div>
 
   <script>
     let DELIVERY_FEE = 10;
-    let userLatitude = null;
-    let userLongitude = null;
-    let pollInterval = null;
 
-    async function loadSettings() {
-      try {
-        const res = await fetch('/api/settings/public');
-        const data = await res.json();
-        if (data.success) {
-          DELIVERY_FEE = Number(data.settings.deliveryFee) || 10;
-          document.getElementById('businessName').innerText = data.settings.businessName.toUpperCase();
-          document.getElementById('deliveryFeeDisplay').innerText = 'KES ' + DELIVERY_FEE;
-          calculateTotal();
-        }
-      } catch (e) { console.error('Settings load error:', e); }
+    function openModal() {
+      document.getElementById('orderModal').classList.add('active');
     }
 
-    function pinLocation() {
-      const btn = document.getElementById('pinBtn');
-      const status = document.getElementById('pinStatus');
-      if (!navigator.geolocation) {
-        status.innerText = "❌ Location not supported on this device.";
-        return;
-      }
-      status.innerText = "📡 Getting location...";
-      btn.disabled = true;
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          userLatitude = position.coords.latitude;
-          userLongitude = position.coords.longitude;
-          btn.classList.add('success');
-          btn.innerText = "✅ LOCATION PINNED";
-          status.innerText = `📍 Lat: ${userLatitude.toFixed(4)}, Long: ${userLongitude.toFixed(4)}`;
-          btn.disabled = false;
-        },
-        (error) => {
-          status.innerText = "❌ Could not get location. Enable GPS.";
-          btn.disabled = false;
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
+    function closeModal() {
+      document.getElementById('orderModal').classList.remove('active');
+    }
+
+    function copyNumber() {
+      navigator.clipboard.writeText("0719516573");
+      alert("Number copied: 0719516573");
     }
 
     function calculateTotal() {
-      const goodsTotal = parseFloat(document.getElementById('goodsAmount').value) || 0;
-      const grandTotal = goodsTotal + DELIVERY_FEE;
-
-      document.getElementById('goodsTotalDisplay').innerText = "KES " + goodsTotal;
-      document.getElementById('totalDisplay').innerText = "KES " + grandTotal;
-      document.getElementById('fullPaymentLabel').innerText = "KES " + grandTotal;
-
-      const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
-      const payBtn = document.getElementById('payBtn');
-
-      if (paymentOption === 'delivery_only') {
-        payBtn.innerText = '🔒 PAY KES ' + DELIVERY_FEE + ' & PLACE ORDER';
-      } else {
-        payBtn.innerText = '🔒 PAY KES ' + grandTotal + ' & PLACE ORDER';
-      }
+      const goods = parseFloat(document.getElementById('goodsAmount').value) || 0;
+      const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+      const total = (goods * quantity) + DELIVERY_FEE;
+      document.getElementById('totalDisplay').innerText = total;
     }
 
-    function showResult(icon, title, message, type) {
-      const result = document.getElementById('result');
-      result.style.display = 'block';
-      result.className = 'result ' + type;
-      result.innerHTML = `
-        <span class="icon">${icon}</span>
-        <div class="title">${title}</div>
-        <div class="msg">${message}</div>
-      `;
-    }
-
-    function resetPayButton() {
-      const payBtn = document.getElementById('payBtn');
-      payBtn.disabled = false;
-      calculateTotal();
-    }
-
-    function startPolling(orderId, amountToCharge, paymentOption) {
-      let elapsed = 0;
-      const maxWait = 90; // 90 seconds max
-      
-      if (pollInterval) clearInterval(pollInterval);
-      
-      pollInterval = setInterval(async () => {
-        elapsed += 3;
-        try {
-          const res = await fetch('/api/order-status/' + orderId);
-          const data = await res.json();
-          
-          if (data.success && data.status === 'Paid') {
-            clearInterval(pollInterval);
-            resetPayButton();
-            showResult('✅', 'Payment Confirmed', 
-              `Your order has been placed successfully. You have paid <b>KES ${amountToCharge}</b>.${paymentOption === 'delivery_only' ? ' Please have <b>KES ' + data.goodsAmount + '</b> ready for the rider.' : ''} We will contact you shortly.`, 
-              'success');
-          } else if (data.success && data.status === 'Failed') {
-            clearInterval(pollInterval);
-            resetPayButton();
-            showResult('❌', 'Payment Not Completed', 
-              `Your order was <b>NOT placed</b>. You cancelled or the M-Pesa prompt timed out. Please tap the button again and enter your M-Pesa PIN to confirm. If you need help, contact us directly.`, 
-              'error');
-          } else if (elapsed >= maxWait) {
-            clearInterval(pollInterval);
-            resetPayButton();
-            showResult('⏱️', 'No Response Received', 
-              `We did not receive confirmation from M-Pesa. If you entered your PIN, please wait a moment and check your M-Pesa messages. If you did not complete payment, your order was <b>NOT placed</b>. Please try again.`, 
-              'warning');
-          }
-        } catch (e) {
-          console.error('Poll error:', e);
-        }
-      }, 3000);
+    function showResult(msg, type) {
+      const res = document.getElementById('result');
+      res.className = 'result ' + type;
+      res.innerText = msg;
     }
 
     async function payDeliveryFee() {
@@ -508,43 +246,20 @@
       const phone = document.getElementById('phone').value;
       const itemDescription = document.getElementById('itemDescription').value;
       const goodsAmount = document.getElementById('goodsAmount').value;
-      const deliveryTime = document.getElementById('deliveryTime').value;
-      const extraInfo = document.getElementById('extraInfo').value;
-      const locationPin = document.getElementById('locationPin').value;
-      const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
+      const quantity = document.getElementById('quantity').value;
 
-      // Mandatory GPS location check
-      if (userLatitude === null || userLongitude === null) {
-        showResult('📍', 'Location Pin Required', 'Please tap "TAP TO PIN MY LOCATION" to capture your exact GPS coordinates before placing your order.', 'warning');
+      if (!hostel || !room || !customerName || !phone || !goodsAmount) {
+        showResult("Please fill in all required fields.", "error");
         return;
       }
 
-      if (!hostel || !room || !customerName || !shopName || !phone || !itemDescription || !goodsAmount || !deliveryTime) {
-        showResult('⚠️', 'Missing Information', 'Please fill in all required fields marked with *', 'warning');
-        return;
-      }
-
-      // Safaricom only check
-      const cleanedPhone = phone.replace(/[^0-9]/g, '');
-      let normalizedPhone = cleanedPhone;
-      if (normalizedPhone.startsWith('254')) normalizedPhone = '0' + normalizedPhone.substring(3);
-      if (normalizedPhone.startsWith('+254')) normalizedPhone = '0' + normalizedPhone.substring(4);
-      const safaricomPrefixes = ['070', '071', '072', '074', '075', '076', '079', '0110', '0111', '0112', '0113', '0114', '0115', '0116', '0117', '0118', '0119'];
-      const isSafaricom = safaricomPrefixes.some(p => normalizedPhone.startsWith(p));
-
-      if (!isSafaricom) {
-        showResult('⚠️', 'M-Pesa Only', 'We currently accept only Safaricom M-Pesa numbers for online payments. Please enter a Safaricom number.', 'warning');
-        return;
-      }
-
-      const goodsTotal = parseFloat(goodsAmount) || 0;
-      const amountToCharge = paymentOption === 'full_payment' ? (goodsTotal + DELIVERY_FEE) : DELIVERY_FEE;
+      // Calculate amount (Delivery Fee only for this example)
+      const amountToCharge = DELIVERY_FEE; 
 
       const payBtn = document.getElementById('payBtn');
       payBtn.disabled = true;
-      payBtn.innerText = '⏳ SENDING PROMPT...';
-
-      showResult('📲', 'Sending Payment Prompt', `Check your phone for the M-Pesa prompt. Enter your PIN to pay <b>KES ${amountToCharge}</b>.`, 'loading');
+      payBtn.innerText = "⏳ Processing...";
+      showResult("Sending M-Pesa prompt...", "loading");
 
       try {
         const response = await fetch('/api/pay', {
@@ -553,30 +268,29 @@
           body: JSON.stringify({ 
             phone, 
             amount: amountToCharge,
-            paymentOption: paymentOption,
+            paymentOption: 'delivery_only',
             orderDetails: { 
               hostel, room, customerName, shopName, itemDescription, 
-              goodsAmount: goodsTotal, deliveryTime, extraInfo, locationPin, 
-              latitude: userLatitude, longitude: userLongitude 
+              goodsAmount, quantity
             }
           })
         });
 
         const data = await response.json();
         
-        if (data.success && data.orderId) {
-          startPolling(data.orderId, amountToCharge, paymentOption);
+        if (data.success) {
+          showResult("✅ Request sent! Check your phone for the M-Pesa PIN prompt.", "success");
         } else {
-          resetPayButton();
-          showResult('❌', 'Failed to Send Prompt', 'There was a problem sending the M-Pesa prompt. Please try again or contact us.', 'error');
+          showResult("❌ Failed: " + (data.error || "Check server logs"), "error");
+          payBtn.disabled = false;
+          payBtn.innerText = "✅ Book Now";
         }
       } catch (error) {
-        resetPayButton();
-        showResult('❌', 'Network Error', 'Could not reach the server. Please check your internet and try again.', 'error');
+        showResult("❌ Network error. Please try again.", "error");
+        payBtn.disabled = false;
+        payBtn.innerText = "✅ Book Now";
       }
     }
-
-    loadSettings();
   </script>
 </body>
 </html>
