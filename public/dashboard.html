@@ -6,8 +6,6 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Georgia, 'Times New Roman', serif; background: #f5f2eb; min-height: 100vh; color: #2c2c2c; padding-bottom: 40px; }
-    
-    /* Classic Header */
     .header { background: linear-gradient(180deg, #0a2342 0%, #1a3a5c 100%); color: #fff; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #d4af37; position: sticky; top: 0; z-index: 100; }
     .header-title { font-size: 18px; letter-spacing: 3px; font-weight: normal; text-transform: uppercase; }
     .header-title span { color: #d4af37; }
@@ -18,7 +16,6 @@
     .btn-icon { background: transparent; border: 1px solid #d4af37; color: #d4af37; padding: 6px 12px; border-radius: 3px; font-size: 11px; letter-spacing: 1px; cursor: pointer; text-decoration: none; font-family: Arial, sans-serif; text-transform: uppercase; }
     .btn-icon:hover { background: #d4af37; color: #0a2342; }
     
-    /* Stats */
     .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; max-width: 700px; margin: 0 auto; }
     .stat-card { background: #fff; border-radius: 4px; padding: 16px; text-align: center; box-shadow: 0 2px 8px rgba(10, 35, 66, 0.08); border-top: 3px solid #d4af37; }
     .stat-card .num { font-size: 26px; font-weight: bold; color: #0a2342; font-family: Georgia, serif; }
@@ -31,13 +28,15 @@
     /* Manage Items Section */
     .manage-items { background: #fff; margin: 0 16px 16px; border-radius: 4px; padding: 16px; max-width: 700px; margin-left: auto; margin-right: auto; box-shadow: 0 2px 8px rgba(10, 35, 66, 0.08); border-left: 4px solid #1565c0; }
     .manage-items h3 { color: #0a2342; font-size: 14px; margin-bottom: 12px; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px; }
-    .item-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
-    .item-input-row input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; font-family: Arial, sans-serif; }
-    .item-input-row input[type="text"] { flex: 0.4; }
+    
+    .item-input-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ccc; }
+    .item-input-row input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; font-family: Arial, sans-serif; }
+    .item-input-row input[type="file"] { font-size: 12px; font-family: Arial, sans-serif; }
+    .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc; display: none; margin-top: 5px; }
+    
     .btn-save-items { width: 100%; background: #1565c0; color: white; border: none; padding: 10px; border-radius: 3px; font-weight: bold; cursor: pointer; margin-top: 8px; font-family: Arial, sans-serif; }
     .btn-save-items:hover { background: #0d47a1; }
     
-    /* Search + Filters */
     .controls { padding: 0 16px 12px; max-width: 700px; margin: 0 auto; }
     .search-box { width: 100%; padding: 12px 14px; border: 1px solid #d8d2c2; border-radius: 3px; font-size: 14px; background: #fdfcf8; font-family: Georgia, serif; margin-bottom: 10px; }
     .search-box:focus { outline: none; border-color: #d4af37; background: #fff; }
@@ -45,7 +44,6 @@
     .filter-btn { padding: 6px 14px; border: 1px solid #d8d2c2; background: #fdfcf8; border-radius: 3px; font-size: 11px; font-weight: 600; color: #666; cursor: pointer; white-space: nowrap; letter-spacing: 1px; text-transform: uppercase; font-family: Arial, sans-serif; }
     .filter-btn.active { background: #0a2342; color: #d4af37; border-color: #0a2342; }
     
-    /* Order Cards */
     #ordersContainer { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 20px; max-width: 700px; margin: 0 auto; }
     .order-card { background: #fff; border-radius: 4px; padding: 14px; box-shadow: 0 2px 8px rgba(10, 35, 66, 0.08); border-left: 4px solid #f39c12; font-size: 12px; display: flex; flex-direction: column; justify-content: space-between; }
     .order-card.Paid { border-left-color: #2e7d32; }
@@ -58,7 +56,6 @@
     .order-card .row b { color: #0a2342; }
     .order-card .divider { height: 1px; background: #e8e3d6; margin: 8px 0; }
     
-    /* Status Pill */
     .status { display: inline-block; padding: 3px 10px; border-radius: 2px; font-size: 10px; font-weight: bold; color: #fff; letter-spacing: 1px; text-transform: uppercase; font-family: Arial, sans-serif; }
     .status.Pending { background-color: #c47a00; }
     .status.Paid { background-color: #2e7d32; }
@@ -66,10 +63,8 @@
     .status.OutforDelivery { background-color: #1565c0; }
     .status.Delivered { background-color: #6a1b9a; }
     
-    /* Map link */
     .map-link { display: inline-block; background: #1565c0; color: #fff !important; text-decoration: none; padding: 5px 10px; border-radius: 2px; font-size: 10px; font-weight: bold; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; font-family: Arial, sans-serif; }
     
-    /* Action Buttons */
     .action-buttons { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
     .action-buttons button { padding: 8px 10px; border: none; border-radius: 3px; color: #fff; font-size: 10px; font-weight: bold; cursor: pointer; width: 100%; letter-spacing: 1px; text-transform: uppercase; font-family: Arial, sans-serif; transition: 0.2s; }
     .action-buttons button:hover { opacity: 0.9; }
@@ -77,9 +72,7 @@
     .btn-out { background: #1565c0; }
     .btn-deliver { background: #6a1b9a; }
     .btn-delete { background: #c62828; }
-    
     .no-orders { text-align: center; grid-column: span 2; padding: 40px; color: #888; background: #fff; border-radius: 4px; font-family: Arial, sans-serif; letter-spacing: 1px; }
-    
     @media (max-width: 400px) { #ordersContainer { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -93,7 +86,6 @@
     </div>
   </div>
 
-  <!-- Stats -->
   <div class="stats">
     <div class="stat-card"><div class="num" id="statToday">0</div><div class="lbl">Orders Today</div></div>
     <div class="stat-card orange"><div class="num" id="statPending">0</div><div class="lbl">Pending</div></div>
@@ -101,17 +93,13 @@
     <div class="stat-card blue"><div class="num" id="statVisits">0</div><div class="lbl">👀 Visitors Today</div></div>
   </div>
 
-  <!-- MANAGE HOMEPAGE ITEMS -->
   <div class="manage-items">
     <h3>🖼️ Manage Homepage Items (Max 5)</h3>
-    <div id="featuredItemsContainer">
-      <!-- Inputs generated via JS -->
-    </div>
+    <div id="featuredItemsContainer"></div>
     <button class="btn-save-items" onclick="saveFeaturedItems()">Save Homepage Items</button>
     <div id="saveStatus" style="text-align:center; font-size:12px; color:green; margin-top:8px;"></div>
   </div>
 
-  <!-- Search + Filters -->
   <div class="controls">
     <input type="text" class="search-box" id="searchBox" placeholder="Search by name, phone, shop..." oninput="applyFilters()">
     <div class="filters">
@@ -133,7 +121,7 @@
     let allOrders = [];
     let currentFilter = 'All';
 
-    // --- MANAGE FEATURED ITEMS LOGIC ---
+    // --- FEATURED ITEMS & UPLOAD LOGIC ---
     async function loadFeaturedItems() {
       try {
         const res = await fetch('/api/settings');
@@ -141,7 +129,6 @@
         const data = await res.json();
         
         let items = data.settings?.featuredItems || [];
-        // Ensure we always have exactly 5 slots
         while (items.length < 5) items.push({ imageUrl: '', name: '' });
 
         const container = document.getElementById('featuredItemsContainer');
@@ -150,25 +137,45 @@
         items.slice(0, 5).forEach((item, i) => {
           container.innerHTML += `
             <div class="item-input-row">
-              <input type="text" id="itemImg${i}" placeholder="Image URL (https://...)" value="${item.imageUrl || ''}">
               <input type="text" id="itemName${i}" placeholder="Item Name (e.g. Chapati)" value="${item.name || ''}">
+              <!-- Hidden input to store the Base64 string -->
+              <input type="hidden" id="itemImg${i}" value="${item.imageUrl || ''}">
+              
+              <label style="font-size:11px; color:#555; font-family:Arial;">Upload Photo:</label>
+              <input type="file" accept="image/*" onchange="handleImageUpload(event, ${i})">
+              
+              <img id="preview${i}" src="${item.imageUrl || ''}" class="img-preview" style="${item.imageUrl ? 'display:block;' : ''}">
             </div>
           `;
         });
       } catch (e) { console.error(e); }
     }
 
+    // Convert selected image to Base64
+    function handleImageUpload(event, index) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById(`itemImg${index}`).value = e.target.result;
+        const preview = document.getElementById(`preview${index}`);
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
     async function saveFeaturedItems() {
       const status = document.getElementById('saveStatus');
-      status.innerText = "Saving...";
+      status.innerText = "Saving (this may take a moment)...";
       status.style.color = "blue";
 
       const newItems = [];
       for (let i = 0; i < 5; i++) {
-        const img = document.getElementById(`itemImg${i}`).value.trim();
         const name = document.getElementById(`itemName${i}`).value.trim();
-        if (img && name) {
-          newItems.push({ imageUrl: img, name: name });
+        const img = document.getElementById(`itemImg${i}`).value; // This holds the base64 string
+        if (name && img) {
+          newItems.push({ name: name, imageUrl: img });
         }
       }
 
@@ -180,11 +187,10 @@
         });
         
         if (res.ok) {
-          status.innerText = "✅ Saved successfully!";
+          status.innerText = "✅ Saved successfully! Open the homepage to view.";
           status.style.color = "green";
-          setTimeout(() => status.innerText = "", 3000);
         } else {
-          status.innerText = "❌ Failed to save.";
+          status.innerText = "❌ Failed to save. Images might be too large.";
           status.style.color = "red";
         }
       } catch (error) {
@@ -202,7 +208,7 @@
     function formatPhoneForWhatsApp(phone) {
       let p = String(phone).replace(/\D/g, '');
       if (p.startsWith('0')) p = '254' + p.substring(1);
-      else if (p.startsWith('254')) { /* ok */ }
+      else if (p.startsWith('254')) {}
       else if (p.length === 9) p = '254' + p;
       return p;
     }
@@ -210,9 +216,9 @@
     function buildWhatsAppMessage(order, type) {
       const ref = order._id.slice(-6);
       const goodsTotal = order.goodsAmount;
-      if (type === 'confirm') return `Hi ${order.customerName}! 👋\n\nYour order #${ref} has been received by Columbus Delivery.\n\n📦 Item: ${order.itemDescription}\n🏪 Shop: ${order.shopName}\n💰 Goods: KES ${goodsTotal}\n🚚 Delivery Fee: KES ${order.deliveryFee} (paid ✅)\n\nWe're processing your order now!`;
-      if (type === 'out') return `Hi ${order.customerName}! 🛵\n\nYour order #${ref} is OUT FOR DELIVERY!\n\nOur rider is on the way to ${order.hostel}, Room ${order.room}.\n\nPlease have KES ${goodsTotal} ready for the goods. 💰`;
-      if (type === 'delivered') return `Hi ${order.customerName}! ✅\n\nYour order #${ref} has been delivered.\n\nThank you for choosing Columbus Delivery! 🛵`;
+      if (type === 'confirm') return `Hi ${order.customerName}! 👋\n\nYour order #${ref} has been received by Columbus Delivery.\n\n📦 Item: ${order.itemDescription}\n💰 Goods: KES ${goodsTotal}\n🚚 Delivery Fee: KES ${order.deliveryFee} (paid ✅)`;
+      if (type === 'out') return `Hi ${order.customerName}! 🛵\n\nYour order #${ref} is OUT FOR DELIVERY!\n\nPlease have KES ${goodsTotal} ready for the goods. 💰`;
+      if (type === 'delivered') return `Hi ${order.customerName}! ✅\n\nYour order #${ref} has been delivered.\n\nThank you! 🛵`;
       return `Hi ${order.customerName}, about your order #${ref}...`;
     }
 
@@ -221,11 +227,7 @@
         const response = await fetch('/api/orders');
         if (handleAuthError(response)) return;
         const data = await response.json();
-        if (data.success) {
-          allOrders = data.orders;
-          updateStats();
-          applyFilters();
-        }
+        if (data.success) { allOrders = data.orders; updateStats(); applyFilters(); }
       } catch (error) { container.innerHTML = "<p class='no-orders'>Network error.</p>"; }
     }
 
@@ -235,9 +237,9 @@
       allOrders.forEach(o => {
         if (new Date(o.createdAt) >= today) {
           todayCount++;
-          if (o.status === 'Paid' || o.status === 'Out for Delivery' || o.status === 'Delivered') todayRevenue += o.deliveryFee || 0;
+          if (['Paid', 'Out for Delivery', 'Delivered'].includes(o.status)) todayRevenue += o.deliveryFee || 0;
         }
-        if (o.status === 'Pending' || o.status === 'Paid') pendingCount++;
+        if (['Pending', 'Paid'].includes(o.status)) pendingCount++;
       });
       document.getElementById('statToday').innerText = todayCount;
       document.getElementById('statPending').innerText = pendingCount;
@@ -249,82 +251,62 @@
         const response = await fetch('/api/visits');
         if (handleAuthError(response)) return;
         const data = await response.json();
-        if (data.success) {
-          const visitsEl = document.getElementById('statVisits');
-          visitsEl.innerText = data.uniqueToday;
-        }
+        if (data.success) document.getElementById('statVisits').innerText = data.uniqueToday;
       } catch (error) { console.error(error); }
     }
 
     function setFilter(btn) {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentFilter = btn.dataset.filter;
-      applyFilters();
+      btn.classList.add('active'); currentFilter = btn.dataset.filter; applyFilters();
     }
 
     function applyFilters() {
       const search = document.getElementById('searchBox').value.toLowerCase().trim();
       container.innerHTML = '';
-
       const filtered = allOrders.filter(o => {
         if (currentFilter !== 'All' && o.status !== currentFilter) return false;
         if (search) {
-          const nameMatch = (o.customerName || '').toLowerCase().includes(search);
-          const phoneMatch = (o.phone || '').toLowerCase().includes(search);
-          const shopMatch = (o.shopName || '').toLowerCase().includes(search);
-          if (!nameMatch && !phoneMatch && !shopMatch) return false;
+          return (o.customerName||'').toLowerCase().includes(search) || 
+                 (o.phone||'').toLowerCase().includes(search) || 
+                 (o.shopName||'').toLowerCase().includes(search);
         }
         return true;
       });
-
-      if (filtered.length === 0) {
-        container.innerHTML = "<p class='no-orders'>No orders match your filter.</p>";
-        return;
-      }
+      if (filtered.length === 0) { container.innerHTML = "<p class='no-orders'>No orders match your filter.</p>"; return; }
       filtered.forEach(order => renderOrder(order));
     }
 
     function renderOrder(order) {
       const statusClass = (order.status || 'Pending').replace(/\s/g, '');
       const waPhone = formatPhoneForWhatsApp(order.phone);
-      
       let mapLink = '';
-      if (order.latitude && order.longitude) {
-        mapLink = `<a class="map-link" target="_blank" href="https://www.google.com/maps?q=${order.latitude},${order.longitude}">📍 Open Map</a>`;
-      }
+      if (order.latitude && order.longitude) mapLink = `<a class="map-link" target="_blank" href="https://www.google.com/maps?q=${order.latitude},${order.longitude}">📍 Open Map</a>`;
       
-      const waConfirmUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'confirm'))}`;
-      const waOutUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'out'))}`;
-      const waDeliveredUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'delivered'))}`;
-      
+      const waConfirm = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'confirm'))}`;
+      const waOut = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'out'))}`;
+      const waDeliv = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'delivered'))}`;
       const ref = order._id.slice(-6).toUpperCase();
-      const orderTime = new Date(order.createdAt).toLocaleString('en-KE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
       
       const card = document.createElement('div');
       card.className = `order-card ${statusClass}`;
       card.id = `order-${order._id}`;
       card.innerHTML = `
         <div>
-          <div class="ref">Order #${ref} • ${orderTime}</div>
+          <div class="ref">Order #${ref} • ${new Date(order.createdAt).toLocaleString('en-KE', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
           <div class="customer">${order.customerName}</div>
           <div class="row">📞 ${order.phone}</div>
           <div class="row">🏠 ${order.hostel}, Room ${order.room}</div>
-          ${order.locationPin ? `<div class="row">📍 ${order.locationPin}</div>` : ''}
           ${mapLink ? `<div class="row">${mapLink}</div>` : ''}
           <div class="divider"></div>
-          <div class="row">🏪 <b>${order.shopName}</b></div>
           <div class="row">📦 ${order.itemDescription}</div>
           <div class="row">💰 Goods: <b>KES ${order.goodsAmount}</b></div>
-          <div class="row">🚚 Fee: KES ${order.deliveryFee} <span style="font-size:9px; color:#888;">(${order.paymentOption === 'full_payment' ? 'PAID FULL' : 'FEE ONLY'})</span></div>
-          ${order.deliveryTime ? `<div class="row">🕐 <b>${order.deliveryTime}</b></div>` : ''}
-          ${order.extraInfo ? `<div class="row" style="font-style:italic; color:#777;">💬 "${order.extraInfo}"</div>` : ''}
+          <div class="row">🚚 Fee: KES ${order.deliveryFee}</div>
           <div class="row" style="margin-top:8px;"><span class="status ${statusClass}">${order.status}</span></div>
         </div>
         <div class="action-buttons">
-          <a href="${waConfirmUrl}" target="_blank" style="text-decoration:none;"><button class="btn-whatsapp">📱 Confirm Order</button></a>
-          <a href="${waOutUrl}" target="_blank" style="text-decoration:none;"><button class="btn-whatsapp">🛵 Out for Delivery</button></a>
-          <a href="${waDeliveredUrl}" target="_blank" style="text-decoration:none;"><button class="btn-whatsapp">✅ Delivered</button></a>
+          <a href="${waConfirm}" target="_blank" style="text-decoration:none;"><button class="btn-whatsapp">📱 Confirm</button></a>
+          <a href="${waOut}" target="_blank" style="text-decoration:none;"><button class="btn-whatsapp">🛵 Out for Delivery</button></a>
+          <a href="${waDeliv}" target="_blank" style="text-decoration:none;"><button class="btn-whatsapp">✅ Delivered</button></a>
           <button class="btn-out" onclick="updateStatus('${order._id}', 'Out for Delivery')">🚚 Mark: Out</button>
           <button class="btn-deliver" onclick="updateStatus('${order._id}', 'Delivered')">✅ Mark: Delivered</button>
           <button class="btn-delete" onclick="deleteOrder('${order._id}')">🗑️ Delete</button>
@@ -335,10 +317,7 @@
 
     async function updateStatus(orderId, newStatus) {
       try {
-        const response = await fetch(`/api/orders/${orderId}/status`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        });
+        const response = await fetch(`/api/orders/${orderId}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
         if (handleAuthError(response)) return;
       } catch (error) { alert("Failed to update status."); }
     }
@@ -349,11 +328,7 @@
         const response = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
         if (handleAuthError(response)) return;
         const data = await response.json();
-        if (data.success) {
-          allOrders = allOrders.filter(o => o._id !== orderId);
-          document.getElementById(`order-${orderId}`).remove();
-          updateStats();
-        }
+        if (data.success) { allOrders = allOrders.filter(o => o._id !== orderId); document.getElementById(`order-${orderId}`).remove(); updateStats(); }
       } catch (error) { alert("Network error."); }
     }
 
@@ -362,22 +337,17 @@
       try { await fetch('/api/logout', { method: 'POST' }); } finally { window.location.href = '/login.html'; }
     }
 
-    socket.on('new-order', (order) => {
-      allOrders.unshift(order); updateStats(); applyFilters(); loadVisits();
-    });
+    socket.on('new-order', (order) => { allOrders.unshift(order); updateStats(); applyFilters(); loadVisits(); });
     socket.on('order-updated', (updatedOrder) => {
       const idx = allOrders.findIndex(o => o._id === updatedOrder._id);
       if (idx !== -1) allOrders[idx] = updatedOrder;
       updateStats(); applyFilters();
     });
     socket.on('order-deleted', (orderId) => {
-      allOrders = allOrders.filter(o => o._id !== orderId);
-      updateStats(); applyFilters();
+      allOrders = allOrders.filter(o => o._id !== orderId); updateStats(); applyFilters();
     });
 
-    loadOrders();
-    loadVisits();
-    loadFeaturedItems(); // Load items on page load
+    loadOrders(); loadVisits(); loadFeaturedItems();
     setInterval(loadVisits, 60000);
   </script>
 </body>
