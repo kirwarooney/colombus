@@ -25,13 +25,13 @@
     .stat-card.blue { border-top-color: #1565c0; }
     .stat-card.blue .num { color: #1565c0; }
 
+    /* Manage Items Section */
     .manage-items { background: #fff; margin: 0 16px 16px; border-radius: 4px; padding: 16px; max-width: 700px; margin-left: auto; margin-right: auto; box-shadow: 0 2px 8px rgba(10, 35, 66, 0.08); border-left: 4px solid #1565c0; }
     .manage-items h3 { color: #0a2342; font-size: 14px; margin-bottom: 12px; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px; }
     .item-input-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ccc; }
-    .item-input-row input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; font-family: Arial, sans-serif; }
-    .item-input-row input[type="file"] { font-size: 12px; font-family: Arial, sans-serif; }
+    .item-input-row input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 3px; font-size: 13px; font-family: Arial, sans-serif; width: 100%; }
     .img-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc; display: none; margin-top: 5px; }
-    .btn-save-items { width: 100%; background: #1565c0; color: white; border: none; padding: 10px; border-radius: 3px; font-weight: bold; cursor: pointer; margin-top: 8px; font-family: Arial, sans-serif; }
+    .btn-save-items { width: 100%; background: #1565c0; color: white; border: none; padding: 12px; border-radius: 3px; font-weight: bold; cursor: pointer; margin-top: 8px; font-family: Arial, sans-serif; font-size: 14px; }
     .btn-save-items:hover { background: #0d47a1; }
     
     .controls { padding: 0 16px 12px; max-width: 700px; margin: 0 auto; }
@@ -92,9 +92,12 @@
 
   <div class="manage-items">
     <h3>🖼️ Manage Homepage Items (Max 5)</h3>
+    <div style="font-size: 12px; color: #666; margin-bottom: 15px; font-family: Arial, sans-serif;">
+      Paste an image link (URL) from Google Images, Imgur, or any website. The preview will show below.
+    </div>
     <div id="featuredItemsContainer"></div>
     <button class="btn-save-items" onclick="saveFeaturedItems()">Save Homepage Items</button>
-    <div id="saveStatus" style="text-align:center; font-size:12px; color:green; margin-top:8px;"></div>
+    <div id="saveStatus" style="text-align:center; font-size:12px; color:green; margin-top:8px; font-weight:bold;"></div>
   </div>
 
   <div class="controls">
@@ -118,7 +121,7 @@
     let allOrders = [];
     let currentFilter = 'All';
 
-    // --- FEATURED ITEMS & UPLOAD LOGIC ---
+    // --- FEATURED ITEMS & URL LOGIC ---
     async function loadFeaturedItems() {
       try {
         const res = await fetch('/api/settings');
@@ -135,47 +138,26 @@
           container.innerHTML += `
             <div class="item-input-row">
               <input type="text" id="itemName${i}" placeholder="Item Name (e.g. Chapati)" value="${item.name || ''}">
-              <input type="hidden" id="itemImg${i}" value="${item.imageUrl || ''}">
               
-              <label style="font-size:11px; color:#555; font-family:Arial;">Upload Photo:</label>
-              <input type="file" accept="image/*" onchange="handleImageUpload(event, ${i})">
+              <input type="text" id="itemImgUrl${i}" placeholder="Paste Image URL here (https://...)" value="${item.imageUrl || ''}" oninput="updatePreview(${i})">
               
-              <img id="preview${i}" src="${item.imageUrl || ''}" class="img-preview" style="${item.imageUrl ? 'display:block;' : ''}">
+              <img id="preview${i}" src="${item.imageUrl || ''}" class="img-preview" style="${item.imageUrl ? 'display:block;' : ''}" onerror="this.style.display='none'">
             </div>
           `;
         });
       } catch (e) { console.error(e); }
     }
 
-    // 👇 NEW: Aggressive Image Resizer (300x300 max, 50% quality) to fix "Failed to save"
-    function handleImageUpload(event, index) {
-      const file = event.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 300; // Very small, perfect for thumbnails
-          const scaleSize = MAX_WIDTH / img.width;
-          canvas.width = MAX_WIDTH;
-          canvas.height = img.height * scaleSize;
-          
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          
-          // 0.5 quality makes it a tiny file size
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5);
-          
-          document.getElementById(`itemImg${index}`).value = compressedBase64;
-          const preview = document.getElementById(`preview${index}`);
-          preview.src = compressedBase64;
-          preview.style.display = 'block';
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+    // Live preview when pasting a URL
+    function updatePreview(index) {
+      const url = document.getElementById(`itemImgUrl${index}`).value.trim();
+      const preview = document.getElementById(`preview${index}`);
+      if (url) {
+        preview.src = url;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
     }
 
     async function saveFeaturedItems() {
@@ -186,9 +168,9 @@
       const newItems = [];
       for (let i = 0; i < 5; i++) {
         const name = document.getElementById(`itemName${i}`).value.trim();
-        const img = document.getElementById(`itemImg${i}`).value;
-        if (name && img) {
-          newItems.push({ name: name, imageUrl: img });
+        const imgUrl = document.getElementById(`itemImgUrl${i}`).value.trim();
+        if (name && imgUrl) {
+          newItems.push({ name: name, imageUrl: imgUrl });
         }
       }
 
@@ -199,16 +181,14 @@
           body: JSON.stringify({ featuredItems: newItems })
         });
         
-        if (res.ok) {
-          status.innerText = "✅ Saved successfully!";
-          status.style.color = "green";
-          setTimeout(() => status.innerText = "", 3000);
-        } else {
-          status.innerText = "❌ Failed to save.";
-          status.style.color = "red";
-        }
+        if (!res.ok) throw new Error("Failed to save to database");
+
+        status.innerText = "✅ Saved successfully! Open homepage to see changes.";
+        status.style.color = "green";
+        setTimeout(() => status.innerText = "", 4000);
+        
       } catch (error) {
-        status.innerText = "❌ Network error.";
+        status.innerText = "❌ " + error.message;
         status.style.color = "red";
       }
     }
