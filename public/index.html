@@ -69,15 +69,7 @@
     .total-box { background: #e3f2fd; border: 2px solid #4d90fe; border-radius: 12px; padding: 15px; text-align: center; margin: 20px 0; }
     .total-box h3 { color: #0a2342; font-size: 22px; margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
     
-    /* Manual Payment Box (Green) */
-    .manual-pay-box { border: 2px dashed #27ae60; background: #e8f8f5; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 20px; }
-    .manual-pay-box h4 { color: #27ae60; font-size: 16px; margin-bottom: 10px; }
-    .manual-pay-buttons { display: flex; gap: 10px; justify-content: center; }
-    .manual-pay-buttons button { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; }
-    .btn-dial { background: #27ae60; }
-    .btn-copy { background: #4d90fe; }
-    
-    /* Book Now Button */
+    /* Order Items Now Button */
     .btn-book-now { width: 100%; background: #4d90fe; color: white; border: none; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-book-now:active { background: #3a7bd5; }
     .btn-book-now:disabled { background: #95a5a6; cursor: not-allowed; }
@@ -191,17 +183,8 @@
           <h3>💰 Total: <span id="totalDisplay">10</span> KES</h3>
         </div>
 
-        <!-- Manual Pay Info (Visual as requested) -->
-        <div class="manual-pay-box">
-          <h4>Step 1: Pay to <span style="color:#0a2342;">0719516573</span></h4>
-          <div class="manual-pay-buttons">
-            <button class="btn-dial" onclick="window.location.href='tel:*334%23'">📞 Dial *334#</button>
-            <button class="btn-copy" onclick="copyNumber()">📋 Copy No.</button>
-          </div>
-        </div>
-
-        <!-- Book Now -->
-        <button class="btn-book-now" id="payBtn" onclick="payDeliveryFee()">✅ Book Now</button>
+        <!-- Order Items Now Button (STK Push) -->
+        <button class="btn-book-now" id="payBtn" onclick="payDeliveryFee()">✅ Order Items Now</button>
         <a class="btn-back-text" onclick="closeModal()">← Back</a>
 
         <div id="result" class="result"></div>
@@ -218,11 +201,6 @@
 
     function closeModal() {
       document.getElementById('orderModal').classList.remove('active');
-    }
-
-    function copyNumber() {
-      navigator.clipboard.writeText("0719516573");
-      alert("Number copied: 0719516573");
     }
 
     function calculateTotal() {
@@ -253,7 +231,7 @@
         return;
       }
 
-      // Calculate amount (Delivery Fee only for this example)
+      // Calculate amount (Delivery Fee only as per previous logic)
       const amountToCharge = DELIVERY_FEE; 
 
       const payBtn = document.getElementById('payBtn');
@@ -283,12 +261,12 @@
         } else {
           showResult("❌ Failed: " + (data.error || "Check server logs"), "error");
           payBtn.disabled = false;
-          payBtn.innerText = "✅ Book Now";
+          payBtn.innerText = "✅ Order Items Now";
         }
       } catch (error) {
         showResult("❌ Network error. Please try again.", "error");
         payBtn.disabled = false;
-        payBtn.innerText = "✅ Book Now";
+        payBtn.innerText = "✅ Order Items Now";
       }
     }
   </script>
