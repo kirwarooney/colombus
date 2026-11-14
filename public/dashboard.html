@@ -147,7 +147,7 @@
       } catch (e) { console.error(e); }
     }
 
-    // 👇 NEW: Compress Image to prevent "File too large" errors
+    // 👇 NEW: Aggressive Image Resizer (300x300 max, 50% quality) to fix "Failed to save"
     function handleImageUpload(event, index) {
       const file = event.target.files[0];
       if (!file) return;
@@ -156,9 +156,8 @@
       reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
-          // Compress image using canvas
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 500; // Resize to max 500px wide
+          const MAX_WIDTH = 300; // Very small, perfect for thumbnails
           const scaleSize = MAX_WIDTH / img.width;
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scaleSize;
@@ -166,8 +165,8 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           
-          // Convert to highly compressed JPEG base64
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+          // 0.5 quality makes it a tiny file size
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5);
           
           document.getElementById(`itemImg${index}`).value = compressedBase64;
           const preview = document.getElementById(`preview${index}`);
