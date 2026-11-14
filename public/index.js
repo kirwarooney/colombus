@@ -14,7 +14,9 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(cors());
-app.use(express.json());
+// 👇 This is critical to allow image uploads
+app.use(express.json({ limit: '50mb' })); 
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ================================
 // SESSION
@@ -87,7 +89,8 @@ mongoose.connect(process.env.MONGODB_URI)
         businessName: 'Columbus Delivery',
         deliveryFee: 10,
         contactPhone: '0719516573',
-        footerMessage: 'Fast, reliable campus delivery'
+        footerMessage: 'Fast, reliable campus delivery',
+        featuredItems: []
       });
       console.log("⚙️ Default settings created");
     }
@@ -98,6 +101,7 @@ const orderSchema = new mongoose.Schema({
     hostel: String, room: String, customerName: String, shopName: String,
     phone: String, itemDescription: String, goodsAmount: Number, quantity: Number,
     locationPin: String, latitude: Number, longitude: Number, deliveryFee: Number,
+    deliveryTime: String, extraInfo: String,
     paymentOption: { type: String, default: 'delivery_only' },
     status: { type: String, default: 'Pending' },
     mpesaReceipt: String, checkoutRequestID: String,
@@ -115,7 +119,8 @@ const settingsSchema = new mongoose.Schema({
     businessName: { type: String, default: 'Columbus Delivery' },
     deliveryFee: { type: Number, default: 10 },
     contactPhone: { type: String, default: '' },
-    footerMessage: { type: String, default: 'Fast, reliable campus delivery' }
+    footerMessage: { type: String, default: 'Fast, reliable campus delivery' },
+    featuredItems: { type: Array, default: [] } 
 });
 const Settings = mongoose.model('Settings', settingsSchema);
 
@@ -123,30 +128,29 @@ const Settings = mongoose.model('Settings', settingsSchema);
 // SOCKET.IO
 // ================================
 io.on('connection', (socket) => {
-    console.log('🟢 WebSocket connected');
-    socket.on('disconnect', () => console.log('🔴 WebSocket disconnected'));
+    socket.on('disconnect', () => {});
 });
 
 // ================================
-// M-PESA (DARAJA) — TILL SETUP
+// M-PESA — PRODUCTION (LIVE)
 // ================================
+const MPESA_BASE = 'https://api.safaricom.co.ke';
+
 async function getMpesaAccessToken() {
     const key = process.env.MPESA_CONSUMER_KEY;
     const secret = process.env.MPESA_CONSUMER_SECRET;
     const auth = Buffer.from(`${key}:${secret}`).toString('base64');
-    const url = process.env.NODE_ENV === 'production' 
-        ? 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
-        : 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
-    
-    const response = await axios.get(url, {
-        headers: { Authorization: `Basic ${auth}` }
-    });
+    const response = await axios.get(
+        `${MPESA_BASE}/oauth/v1/generate?grant_type=client_credentials`,
+        { headers: { Authorization: `Basic ${auth}` } }
+    );
     return response.data.access_token;
 }
 
 app.post('/api/pay', async (req, res) => {
     try {
         const { phone, amount, orderDetails, paymentOption } = req.body;
+
         const settings = await Settings.findOne();
         const deliveryFee = settings ? settings.deliveryFee : 10;
         
@@ -157,53 +161,58 @@ app.post('/api/pay', async (req, res) => {
             goodsAmount: orderDetails.goodsAmount, quantity: orderDetails.quantity,
             locationPin: orderDetails.locationPin,
             latitude: orderDetails.latitude, longitude: orderDetails.longitude,
+            deliveryTime: orderDetails.deliveryTime,
+            extraInfo: orderDetails.extraInfo,
             deliveryFee: deliveryFee, 
             paymentOption: paymentOption || 'delivery_only',
             status: 'Pending', paymentMethod: 'daraja'
         });
         await newOrder.save();
-        console.log("📦 Daraja Order saved:", newOrder._id);
         io.emit('new-order', newOrder);
 
         const token = await getMpesaAccessToken();
         const date = new Date();
         const timestamp = date.getFullYear() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2) + ("0" + date.getHours()).slice(-2) + ("0" + date.getMinutes()).slice(-2) + ("0" + date.getSeconds()).slice(-2);
         
-        const shortcode = process.env.MPESA_SHORTCODE; // This is your Store Number: 1307207
+        const shortcode = process.env.MPESA_SHORTCODE;
+        const tillNumber = process.env.MPESA_TILL_NUMBER;
         const passkey = process.env.MPESA_PASSKEY;
         const password = Buffer.from(shortcode + passkey + timestamp).toString('base64');
 
         let formattedPhone = phone;
         if (phone.startsWith('0')) formattedPhone = '254' + phone.substring(1);
         else if (phone.startsWith('+')) formattedPhone = phone.substring(1);
+        else if (phone.startsWith('254')) formattedPhone = phone;
+        else formattedPhone = '254' + phone;
 
         const stkPushData = {
-            BusinessShortCode: shortcode, 
-            Password: password, 
+            BusinessShortCode: shortcode,
+            Password: password,
             Timestamp: timestamp,
-            TransactionType: "CustomerBuyGoodsOnline", // ✅ CORRECT FOR TILL
+            TransactionType: "CustomerBuyGoodsOnline",
             Amount: amount,
-            PartyA: formattedPhone, 
-            PartyB: shortcode, 
+            PartyA: formattedPhone,
+            PartyB: tillNumber,
             PhoneNumber: formattedPhone,
             CallBackURL: process.env.MPESA_CALLBACK_URL,
-            AccountReference: "ColumbusDelivery", 
+            AccountReference: "ColumbusDelivery",
             TransactionDesc: "Delivery Payment"
         };
 
-        const apiUrl = process.env.NODE_ENV === 'production'
-            ? 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
-            : 'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
+        const response = await axios.post(
+            `${MPESA_BASE}/mpesa/stkpush/v1/processrequest`,
+            stkPushData,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-        const response = await axios.post(apiUrl, stkPushData, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        if (response.data && response.data.CheckoutRequestID) {
+            newOrder.checkoutRequestID = response.data.CheckoutRequestID;
+            await newOrder.save();
+        }
 
-        newOrder.checkoutRequestID = response.data.CheckoutRequestID;
-        await newOrder.save();
-        res.json({ success: true, data: response.data });
+        res.json({ success: true, orderId: newOrder._id, data: response.data });
     } catch (error) {
-        console.error("❌ M-Pesa Error Details:", error.response ? error.response.data : error.message);
+        console.error("❌ M-Pesa Error:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
         res.status(500).json({ success: false, error: "M-Pesa initiation failed." });
     }
 });
@@ -213,6 +222,7 @@ app.post('/api/callback', async (req, res) => {
         const callbackData = req.body.Body.stkCallback;
         const checkoutRequestID = callbackData.CheckoutRequestID;
         const resultCode = callbackData.ResultCode;
+        
         if (resultCode === 0) {
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
             const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true });
@@ -223,6 +233,14 @@ app.post('/api/callback', async (req, res) => {
         }
     } catch (error) { console.error("Callback error:", error.message); }
     res.json({ ResultCode: 0, ResultDesc: "Success" });
+});
+
+app.get('/api/order-status/:id', async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ success: false });
+        res.json({ success: true, status: order.status, goodsAmount: order.goodsAmount, deliveryFee: order.deliveryFee });
+    } catch (error) { res.status(500).json({ success: false }); }
 });
 
 // ================================
@@ -237,25 +255,26 @@ app.get('/api/settings/public', async (req, res) => {
                 businessName: settings?.businessName || 'Columbus Delivery',
                 deliveryFee: settings?.deliveryFee || 10,
                 contactPhone: settings?.contactPhone || '',
-                footerMessage: settings?.footerMessage || 'Fast, reliable campus delivery'
+                footerMessage: settings?.footerMessage || 'Fast, reliable campus delivery',
+                featuredItems: settings?.featuredItems || []
             }
         });
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
 app.get('/api/settings', requireAuth, async (req, res) => {
-    try {
-        const settings = await Settings.findOne();
-        res.json({ success: true, settings });
+    try { 
+        const settings = await Settings.findOne(); 
+        res.json({ success: true, settings }); 
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
 app.put('/api/settings', requireAuth, async (req, res) => {
     try {
-        const { businessName, deliveryFee, contactPhone, footerMessage } = req.body;
+        const { businessName, deliveryFee, contactPhone, footerMessage, featuredItems } = req.body;
         const settings = await Settings.findOneAndUpdate(
             {},
-            { businessName, deliveryFee: Number(deliveryFee), contactPhone, footerMessage },
+            { businessName, deliveryFee: Number(deliveryFee), contactPhone, footerMessage, featuredItems },
             { new: true, upsert: true }
         );
         res.json({ success: true, settings });
@@ -263,7 +282,7 @@ app.put('/api/settings', requireAuth, async (req, res) => {
 });
 
 // ================================
-// TRACKING
+// TRACKING & VISITS
 // ================================
 app.get('/api/track/:phone', async (req, res) => {
     try {
@@ -277,13 +296,9 @@ app.get('/api/track/:phone', async (req, res) => {
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
-// ================================
-// VISITS
-// ================================
 app.get('/api/visits', requireAuth, async (req, res) => {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = new Date(); today.setHours(0, 0, 0, 0);
         const todayVisits = await Visit.countDocuments({ createdAt: { $gte: today } });
         const totalVisits = await Visit.countDocuments();
         const uniqueIpsToday = await Visit.distinct('ip', { createdAt: { $gte: today } });
@@ -296,10 +311,8 @@ app.get('/api/visits', requireAuth, async (req, res) => {
 // ADMIN ORDERS
 // ================================
 app.get('/api/orders', requireAuth, async (req, res) => {
-    try {
-        const orders = await Order.find().sort({ createdAt: -1 });
-        res.json({ success: true, orders });
-    } catch (error) { res.status(500).json({ success: false }); }
+    try { const orders = await Order.find().sort({ createdAt: -1 }); res.json({ success: true, orders }); } 
+    catch (error) { res.status(500).json({ success: false }); }
 });
 
 app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
@@ -320,8 +333,5 @@ app.delete('/api/orders/:id', requireAuth, async (req, res) => {
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
-// ================================
-// START
-// ================================
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
