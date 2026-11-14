@@ -87,7 +87,8 @@ mongoose.connect(process.env.MONGODB_URI)
         businessName: 'Columbus Delivery',
         deliveryFee: 10,
         contactPhone: '0719516573',
-        footerMessage: 'Fast, reliable campus delivery'
+        footerMessage: 'Fast, reliable campus delivery',
+        featuredItems: []
       });
       console.log("⚙️ Default settings created");
     }
@@ -98,8 +99,7 @@ const orderSchema = new mongoose.Schema({
     hostel: String, room: String, customerName: String, shopName: String,
     phone: String, itemDescription: String, goodsAmount: Number, quantity: Number,
     locationPin: String, latitude: Number, longitude: Number, deliveryFee: Number,
-    deliveryTime: String,
-    extraInfo: String,
+    deliveryTime: String, extraInfo: String,
     paymentOption: { type: String, default: 'delivery_only' },
     status: { type: String, default: 'Pending' },
     mpesaReceipt: String, checkoutRequestID: String,
@@ -113,11 +113,13 @@ const visitSchema = new mongoose.Schema({
 });
 const Visit = mongoose.model('Visit', visitSchema);
 
+// Added featuredItems array
 const settingsSchema = new mongoose.Schema({
     businessName: { type: String, default: 'Columbus Delivery' },
     deliveryFee: { type: Number, default: 10 },
     contactPhone: { type: String, default: '' },
-    footerMessage: { type: String, default: 'Fast, reliable campus delivery' }
+    footerMessage: { type: String, default: 'Fast, reliable campus delivery' },
+    featuredItems: { type: Array, default: [] } 
 });
 const Settings = mongoose.model('Settings', settingsSchema);
 
@@ -139,19 +141,16 @@ async function getMpesaAccessToken() {
     const secret = process.env.MPESA_CONSUMER_SECRET;
     const auth = Buffer.from(`${key}:${secret}`).toString('base64');
     
-    console.log("🔑 Requesting M-Pesa Access Token...");
     const response = await axios.get(
         `${MPESA_BASE}/oauth/v1/generate?grant_type=client_credentials`,
         { headers: { Authorization: `Basic ${auth}` } }
     );
-    console.log("✅ Access Token received");
     return response.data.access_token;
 }
 
 app.post('/api/pay', async (req, res) => {
     try {
         const { phone, amount, orderDetails, paymentOption } = req.body;
-        console.log("📥 Incoming payment request:", { phone, amount, paymentOption });
 
         const settings = await Settings.findOne();
         const deliveryFee = settings ? settings.deliveryFee : 10;
@@ -170,24 +169,15 @@ app.post('/api/pay', async (req, res) => {
             status: 'Pending', paymentMethod: 'daraja'
         });
         await newOrder.save();
-        console.log("📦 Daraja Order saved:", newOrder._id);
         io.emit('new-order', newOrder);
 
         const token = await getMpesaAccessToken();
         const date = new Date();
-        const timestamp = date.getFullYear() + 
-            ("0" + (date.getMonth() + 1)).slice(-2) +
-            ("0" + date.getDate()).slice(-2) +
-            ("0" + date.getHours()).slice(-2) +
-            ("0" + date.getMinutes()).slice(-2) +
-            ("0" + date.getSeconds()).slice(-2);
+        const timestamp = date.getFullYear() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2) + ("0" + date.getHours()).slice(-2) + ("0" + date.getMinutes()).slice(-2) + ("0" + date.getSeconds()).slice(-2);
         
-        // Configuration parameters
-        const shortcode = process.env.MPESA_SHORTCODE;       // Store Number: 1307207
-        const tillNumber = process.env.MPESA_TILL_NUMBER;    // Till Number: 1777517
+        const shortcode = process.env.MPESA_SHORTCODE;
+        const tillNumber = process.env.MPESA_TILL_NUMBER;
         const passkey = process.env.MPESA_PASSKEY;
-        
-        // Password generated using the Store Shortcode + Passkey + Timestamp
         const password = Buffer.from(shortcode + passkey + timestamp).toString('base64');
 
         let formattedPhone = phone;
@@ -203,15 +193,12 @@ app.post('/api/pay', async (req, res) => {
             TransactionType: "CustomerBuyGoodsOnline",
             Amount: amount,
             PartyA: formattedPhone,
-            PartyB: tillNumber || "1777517",
+            PartyB: tillNumber,
             PhoneNumber: formattedPhone,
             CallBackURL: process.env.MPESA_CALLBACK_URL,
             AccountReference: "ColumbusDelivery",
             TransactionDesc: "Delivery Payment"
         };
-
-        console.log("🚀 Sending STK Push to Safaricom...");
-        console.log("📤 Payload:", JSON.stringify(stkPushData, null, 2));
 
         const response = await axios.post(
             `${MPESA_BASE}/mpesa/stkpush/v1/processrequest`,
@@ -219,31 +206,19 @@ app.post('/api/pay', async (req, res) => {
             { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        console.log("✅ Safaricom Response:", JSON.stringify(response.data, null, 2));
-
         if (response.data && response.data.CheckoutRequestID) {
             newOrder.checkoutRequestID = response.data.CheckoutRequestID;
             await newOrder.save();
         }
 
-        // Return orderId so the frontend can poll for status
-        res.json({ 
-            success: true, 
-            orderId: newOrder._id, 
-            data: response.data 
-        });
+        res.json({ success: true, orderId: newOrder._id, data: response.data });
     } catch (error) {
         console.error("❌ M-Pesa Error:", error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
-        res.status(500).json({ 
-            success: false, 
-            error: "M-Pesa initiation failed. Check server logs.",
-            details: error.response ? error.response.data : error.message
-        });
+        res.status(500).json({ success: false, error: "M-Pesa initiation failed." });
     }
 });
 
 app.post('/api/callback', async (req, res) => {
-    console.log("📞 M-Pesa Callback Received:", JSON.stringify(req.body, null, 2));
     try {
         const callbackData = req.body.Body.stkCallback;
         const checkoutRequestID = callbackData.CheckoutRequestID;
@@ -251,44 +226,22 @@ app.post('/api/callback', async (req, res) => {
         
         if (resultCode === 0) {
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
-            const updatedOrder = await Order.findOneAndUpdate(
-                { checkoutRequestID }, 
-                { status: 'Paid', mpesaReceipt }, 
-                { new: true }
-            );
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true });
             if (updatedOrder) io.emit('order-updated', updatedOrder);
-            console.log("✅ Order marked as PAID. Receipt:", mpesaReceipt);
         } else {
-            const updatedOrder = await Order.findOneAndUpdate(
-                { checkoutRequestID }, 
-                { status: 'Failed' }, 
-                { new: true }
-            );
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { new: true });
             if (updatedOrder) io.emit('order-updated', updatedOrder);
-            console.log("❌ Order payment FAILED. Code:", resultCode);
         }
-    } catch (error) { 
-        console.error("Callback error:", error.message); 
-    }
+    } catch (error) { console.error("Callback error:", error.message); }
     res.json({ ResultCode: 0, ResultDesc: "Success" });
 });
 
-// ================================
-// ORDER STATUS (for customer polling)
-// ================================
 app.get('/api/order-status/:id', async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ success: false });
-        res.json({ 
-            success: true, 
-            status: order.status,
-            goodsAmount: order.goodsAmount,
-            deliveryFee: order.deliveryFee
-        });
-    } catch (error) { 
-        res.status(500).json({ success: false }); 
-    }
+        res.json({ success: true, status: order.status, goodsAmount: order.goodsAmount, deliveryFee: order.deliveryFee });
+    } catch (error) { res.status(500).json({ success: false }); }
 });
 
 // ================================
@@ -303,7 +256,8 @@ app.get('/api/settings/public', async (req, res) => {
                 businessName: settings?.businessName || 'Columbus Delivery',
                 deliveryFee: settings?.deliveryFee || 10,
                 contactPhone: settings?.contactPhone || '',
-                footerMessage: settings?.footerMessage || 'Fast, reliable campus delivery'
+                footerMessage: settings?.footerMessage || 'Fast, reliable campus delivery',
+                featuredItems: settings?.featuredItems || [] // Expose to frontend
             }
         });
     } catch (error) { res.status(500).json({ success: false }); }
@@ -318,10 +272,10 @@ app.get('/api/settings', requireAuth, async (req, res) => {
 
 app.put('/api/settings', requireAuth, async (req, res) => {
     try {
-        const { businessName, deliveryFee, contactPhone, footerMessage } = req.body;
+        const { businessName, deliveryFee, contactPhone, footerMessage, featuredItems } = req.body;
         const settings = await Settings.findOneAndUpdate(
             {},
-            { businessName, deliveryFee: Number(deliveryFee), contactPhone, footerMessage },
+            { businessName, deliveryFee: Number(deliveryFee), contactPhone, footerMessage, featuredItems },
             { new: true, upsert: true }
         );
         res.json({ success: true, settings });
@@ -329,7 +283,7 @@ app.put('/api/settings', requireAuth, async (req, res) => {
 });
 
 // ================================
-// TRACKING
+// TRACKING & VISITS
 // ================================
 app.get('/api/track/:phone', async (req, res) => {
     try {
@@ -343,24 +297,14 @@ app.get('/api/track/:phone', async (req, res) => {
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
-// ================================
-// VISITS
-// ================================
 app.get('/api/visits', requireAuth, async (req, res) => {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = new Date(); today.setHours(0, 0, 0, 0);
         const todayVisits = await Visit.countDocuments({ createdAt: { $gte: today } });
         const totalVisits = await Visit.countDocuments();
         const uniqueIpsToday = await Visit.distinct('ip', { createdAt: { $gte: today } });
         const uniqueIpsTotal = await Visit.distinct('ip');
-        res.json({ 
-            success: true, 
-            todayVisits, 
-            totalVisits, 
-            uniqueToday: uniqueIpsToday.length, 
-            uniqueTotal: uniqueIpsTotal.length 
-        });
+        res.json({ success: true, todayVisits, totalVisits, uniqueToday: uniqueIpsToday.length, uniqueTotal: uniqueIpsTotal.length });
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
@@ -368,19 +312,13 @@ app.get('/api/visits', requireAuth, async (req, res) => {
 // ADMIN ORDERS
 // ================================
 app.get('/api/orders', requireAuth, async (req, res) => {
-    try { 
-        const orders = await Order.find().sort({ createdAt: -1 }); 
-        res.json({ success: true, orders }); 
-    } catch (error) { res.status(500).json({ success: false }); }
+    try { const orders = await Order.find().sort({ createdAt: -1 }); res.json({ success: true, orders }); } 
+    catch (error) { res.status(500).json({ success: false }); }
 });
 
 app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
     try {
-        const updatedOrder = await Order.findByIdAndUpdate(
-            req.params.id, 
-            { status: req.body.status }, 
-            { new: true }
-        );
+        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
         if (!updatedOrder) return res.status(404).json({ success: false });
         io.emit('order-updated', updatedOrder);
         res.json({ success: true, order: updatedOrder });
@@ -396,16 +334,5 @@ app.delete('/api/orders/:id', requireAuth, async (req, res) => {
     } catch (error) { res.status(500).json({ success: false }); }
 });
 
-// ================================
-// START
-// ================================
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📌 MPESA_SHORTCODE (Store): ${process.env.MPESA_SHORTCODE ? '✅ Set' : '❌ MISSING'}`);
-    console.log(`📌 MPESA_TILL_NUMBER: ${process.env.MPESA_TILL_NUMBER ? '✅ Set' : '❌ MISSING'}`);
-    console.log(`📌 MPESA_CONSUMER_KEY: ${process.env.MPESA_CONSUMER_KEY ? '✅ Set' : '❌ MISSING'}`);
-    console.log(`📌 MPESA_CONSUMER_SECRET: ${process.env.MPESA_CONSUMER_SECRET ? '✅ Set' : '❌ MISSING'}`);
-    console.log(`📌 MPESA_PASSKEY: ${process.env.MPESA_PASSKEY ? '✅ Set' : '❌ MISSING'}`);
-    console.log(`📌 MPESA_CALLBACK_URL: ${process.env.MPESA_CALLBACK_URL || '❌ MISSING'}`);
-});
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
