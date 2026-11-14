@@ -27,6 +27,15 @@
     .stat-card.orange .num { color: #c47a00; }
     .stat-card.blue { border-top-color: #1565c0; }
     .stat-card.blue .num { color: #1565c0; }
+
+    /* Manage Items Section */
+    .manage-items { background: #fff; margin: 0 16px 16px; border-radius: 4px; padding: 16px; max-width: 700px; margin-left: auto; margin-right: auto; box-shadow: 0 2px 8px rgba(10, 35, 66, 0.08); border-left: 4px solid #1565c0; }
+    .manage-items h3 { color: #0a2342; font-size: 14px; margin-bottom: 12px; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px; }
+    .item-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .item-input-row input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; font-family: Arial, sans-serif; }
+    .item-input-row input[type="text"] { flex: 0.4; }
+    .btn-save-items { width: 100%; background: #1565c0; color: white; border: none; padding: 10px; border-radius: 3px; font-weight: bold; cursor: pointer; margin-top: 8px; font-family: Arial, sans-serif; }
+    .btn-save-items:hover { background: #0d47a1; }
     
     /* Search + Filters */
     .controls { padding: 0 16px 12px; max-width: 700px; margin: 0 auto; }
@@ -71,9 +80,7 @@
     
     .no-orders { text-align: center; grid-column: span 2; padding: 40px; color: #888; background: #fff; border-radius: 4px; font-family: Arial, sans-serif; letter-spacing: 1px; }
     
-    @media (max-width: 400px) {
-      #ordersContainer { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 400px) { #ordersContainer { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -88,22 +95,20 @@
 
   <!-- Stats -->
   <div class="stats">
-    <div class="stat-card">
-      <div class="num" id="statToday">0</div>
-      <div class="lbl">Orders Today</div>
+    <div class="stat-card"><div class="num" id="statToday">0</div><div class="lbl">Orders Today</div></div>
+    <div class="stat-card orange"><div class="num" id="statPending">0</div><div class="lbl">Pending</div></div>
+    <div class="stat-card green"><div class="num" id="statRevenue">KES 0</div><div class="lbl">Today Fees</div></div>
+    <div class="stat-card blue"><div class="num" id="statVisits">0</div><div class="lbl">👀 Visitors Today</div></div>
+  </div>
+
+  <!-- MANAGE HOMEPAGE ITEMS -->
+  <div class="manage-items">
+    <h3>🖼️ Manage Homepage Items (Max 5)</h3>
+    <div id="featuredItemsContainer">
+      <!-- Inputs generated via JS -->
     </div>
-    <div class="stat-card orange">
-      <div class="num" id="statPending">0</div>
-      <div class="lbl">Pending</div>
-    </div>
-    <div class="stat-card green">
-      <div class="num" id="statRevenue">KES 0</div>
-      <div class="lbl">Today Fees</div>
-    </div>
-    <div class="stat-card blue">
-      <div class="num" id="statVisits">0</div>
-      <div class="lbl">👀 Visitors Today</div>
-    </div>
+    <button class="btn-save-items" onclick="saveFeaturedItems()">Save Homepage Items</button>
+    <div id="saveStatus" style="text-align:center; font-size:12px; color:green; margin-top:8px;"></div>
   </div>
 
   <!-- Search + Filters -->
@@ -128,6 +133,67 @@
     let allOrders = [];
     let currentFilter = 'All';
 
+    // --- MANAGE FEATURED ITEMS LOGIC ---
+    async function loadFeaturedItems() {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.status === 401) { window.location.href = '/login.html'; return; }
+        const data = await res.json();
+        
+        let items = data.settings?.featuredItems || [];
+        // Ensure we always have exactly 5 slots
+        while (items.length < 5) items.push({ imageUrl: '', name: '' });
+
+        const container = document.getElementById('featuredItemsContainer');
+        container.innerHTML = '';
+        
+        items.slice(0, 5).forEach((item, i) => {
+          container.innerHTML += `
+            <div class="item-input-row">
+              <input type="text" id="itemImg${i}" placeholder="Image URL (https://...)" value="${item.imageUrl || ''}">
+              <input type="text" id="itemName${i}" placeholder="Item Name (e.g. Chapati)" value="${item.name || ''}">
+            </div>
+          `;
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    async function saveFeaturedItems() {
+      const status = document.getElementById('saveStatus');
+      status.innerText = "Saving...";
+      status.style.color = "blue";
+
+      const newItems = [];
+      for (let i = 0; i < 5; i++) {
+        const img = document.getElementById(`itemImg${i}`).value.trim();
+        const name = document.getElementById(`itemName${i}`).value.trim();
+        if (img && name) {
+          newItems.push({ imageUrl: img, name: name });
+        }
+      }
+
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ featuredItems: newItems })
+        });
+        
+        if (res.ok) {
+          status.innerText = "✅ Saved successfully!";
+          status.style.color = "green";
+          setTimeout(() => status.innerText = "", 3000);
+        } else {
+          status.innerText = "❌ Failed to save.";
+          status.style.color = "red";
+        }
+      } catch (error) {
+        status.innerText = "❌ Network error.";
+        status.style.color = "red";
+      }
+    }
+
+    // --- ORDER LOGIC ---
     function handleAuthError(response) {
       if (response.status === 401) { window.location.href = '/login.html'; return true; }
       return false;
@@ -160,30 +226,19 @@
           updateStats();
           applyFilters();
         }
-      } catch (error) {
-        container.innerHTML = "<p class='no-orders'>Network error.</p>";
-      }
+      } catch (error) { container.innerHTML = "<p class='no-orders'>Network error.</p>"; }
     }
 
     function updateStats() {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      let todayCount = 0;
-      let pendingCount = 0;
-      let todayRevenue = 0;
-
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      let todayCount = 0; let pendingCount = 0; let todayRevenue = 0;
       allOrders.forEach(o => {
-        const orderDate = new Date(o.createdAt);
-        if (orderDate >= today) {
+        if (new Date(o.createdAt) >= today) {
           todayCount++;
-          if (o.status === 'Paid' || o.status === 'Out for Delivery' || o.status === 'Delivered') {
-            todayRevenue += o.deliveryFee || 0;
-          }
+          if (o.status === 'Paid' || o.status === 'Out for Delivery' || o.status === 'Delivered') todayRevenue += o.deliveryFee || 0;
         }
         if (o.status === 'Pending' || o.status === 'Paid') pendingCount++;
       });
-
       document.getElementById('statToday').innerText = todayCount;
       document.getElementById('statPending').innerText = pendingCount;
       document.getElementById('statRevenue').innerText = 'KES ' + todayRevenue;
@@ -197,9 +252,8 @@
         if (data.success) {
           const visitsEl = document.getElementById('statVisits');
           visitsEl.innerText = data.uniqueToday;
-          visitsEl.title = `Today: ${data.todayVisits} views (${data.uniqueToday} unique) | All-time: ${data.totalVisits} views (${data.uniqueTotal} unique)`;
         }
-      } catch (error) { console.error('Could not load visits:', error); }
+      } catch (error) { console.error(error); }
     }
 
     function setFilter(btn) {
@@ -228,13 +282,11 @@
         container.innerHTML = "<p class='no-orders'>No orders match your filter.</p>";
         return;
       }
-
       filtered.forEach(order => renderOrder(order));
     }
 
     function renderOrder(order) {
       const statusClass = (order.status || 'Pending').replace(/\s/g, '');
-      
       const waPhone = formatPhoneForWhatsApp(order.phone);
       
       let mapLink = '';
@@ -247,9 +299,7 @@
       const waDeliveredUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'delivered'))}`;
       
       const ref = order._id.slice(-6).toUpperCase();
-      const orderTime = new Date(order.createdAt).toLocaleString('en-KE', { 
-        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
-      });
+      const orderTime = new Date(order.createdAt).toLocaleString('en-KE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
       
       const card = document.createElement('div');
       card.className = `order-card ${statusClass}`;
@@ -286,8 +336,7 @@
     async function updateStatus(orderId, newStatus) {
       try {
         const response = await fetch(`/api/orders/${orderId}/status`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: newStatus })
         });
         if (handleAuthError(response)) return;
@@ -302,8 +351,7 @@
         const data = await response.json();
         if (data.success) {
           allOrders = allOrders.filter(o => o._id !== orderId);
-          const card = document.getElementById(`order-${orderId}`);
-          if (card) card.remove();
+          document.getElementById(`order-${orderId}`).remove();
           updateStats();
         }
       } catch (error) { alert("Network error."); }
@@ -315,27 +363,21 @@
     }
 
     socket.on('new-order', (order) => {
-      allOrders.unshift(order);
-      updateStats();
-      applyFilters();
-      loadVisits();
+      allOrders.unshift(order); updateStats(); applyFilters(); loadVisits();
     });
-
     socket.on('order-updated', (updatedOrder) => {
       const idx = allOrders.findIndex(o => o._id === updatedOrder._id);
       if (idx !== -1) allOrders[idx] = updatedOrder;
-      updateStats();
-      applyFilters();
+      updateStats(); applyFilters();
     });
-
     socket.on('order-deleted', (orderId) => {
       allOrders = allOrders.filter(o => o._id !== orderId);
-      updateStats();
-      applyFilters();
+      updateStats(); applyFilters();
     });
 
     loadOrders();
     loadVisits();
+    loadFeaturedItems(); // Load items on page load
     setInterval(loadVisits, 60000);
   </script>
 </body>
