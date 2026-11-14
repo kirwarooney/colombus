@@ -25,15 +25,12 @@
     .stat-card.blue { border-top-color: #1565c0; }
     .stat-card.blue .num { color: #1565c0; }
 
-    /* Manage Items Section */
     .manage-items { background: #fff; margin: 0 16px 16px; border-radius: 4px; padding: 16px; max-width: 700px; margin-left: auto; margin-right: auto; box-shadow: 0 2px 8px rgba(10, 35, 66, 0.08); border-left: 4px solid #1565c0; }
     .manage-items h3 { color: #0a2342; font-size: 14px; margin-bottom: 12px; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px; }
-    
     .item-input-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ccc; }
     .item-input-row input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; font-family: Arial, sans-serif; }
     .item-input-row input[type="file"] { font-size: 12px; font-family: Arial, sans-serif; }
-    .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc; display: none; margin-top: 5px; }
-    
+    .img-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc; display: none; margin-top: 5px; }
     .btn-save-items { width: 100%; background: #1565c0; color: white; border: none; padding: 10px; border-radius: 3px; font-weight: bold; cursor: pointer; margin-top: 8px; font-family: Arial, sans-serif; }
     .btn-save-items:hover { background: #0d47a1; }
     
@@ -138,7 +135,6 @@
           container.innerHTML += `
             <div class="item-input-row">
               <input type="text" id="itemName${i}" placeholder="Item Name (e.g. Chapati)" value="${item.name || ''}">
-              <!-- Hidden input to store the Base64 string -->
               <input type="hidden" id="itemImg${i}" value="${item.imageUrl || ''}">
               
               <label style="font-size:11px; color:#555; font-family:Arial;">Upload Photo:</label>
@@ -151,29 +147,47 @@
       } catch (e) { console.error(e); }
     }
 
-    // Convert selected image to Base64
+    // 👇 NEW: Compress Image to prevent "File too large" errors
     function handleImageUpload(event, index) {
       const file = event.target.files[0];
       if (!file) return;
+      
       const reader = new FileReader();
       reader.onload = function(e) {
-        document.getElementById(`itemImg${index}`).value = e.target.result;
-        const preview = document.getElementById(`preview${index}`);
-        preview.src = e.target.result;
-        preview.style.display = 'block';
+        const img = new Image();
+        img.onload = function() {
+          // Compress image using canvas
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 500; // Resize to max 500px wide
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          // Convert to highly compressed JPEG base64
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+          
+          document.getElementById(`itemImg${index}`).value = compressedBase64;
+          const preview = document.getElementById(`preview${index}`);
+          preview.src = compressedBase64;
+          preview.style.display = 'block';
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
 
     async function saveFeaturedItems() {
       const status = document.getElementById('saveStatus');
-      status.innerText = "Saving (this may take a moment)...";
+      status.innerText = "Saving...";
       status.style.color = "blue";
 
       const newItems = [];
       for (let i = 0; i < 5; i++) {
         const name = document.getElementById(`itemName${i}`).value.trim();
-        const img = document.getElementById(`itemImg${i}`).value; // This holds the base64 string
+        const img = document.getElementById(`itemImg${i}`).value;
         if (name && img) {
           newItems.push({ name: name, imageUrl: img });
         }
@@ -187,10 +201,11 @@
         });
         
         if (res.ok) {
-          status.innerText = "✅ Saved successfully! Open the homepage to view.";
+          status.innerText = "✅ Saved successfully!";
           status.style.color = "green";
+          setTimeout(() => status.innerText = "", 3000);
         } else {
-          status.innerText = "❌ Failed to save. Images might be too large.";
+          status.innerText = "❌ Failed to save.";
           status.style.color = "red";
         }
       } catch (error) {
