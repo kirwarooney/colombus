@@ -14,7 +14,9 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(cors());
-app.use(express.json());
+// 👇 Increased limits to allow base64 image uploads
+app.use(express.json({ limit: '50mb' })); 
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // ================================
 // SESSION
@@ -113,7 +115,6 @@ const visitSchema = new mongoose.Schema({
 });
 const Visit = mongoose.model('Visit', visitSchema);
 
-// Added featuredItems array
 const settingsSchema = new mongoose.Schema({
     businessName: { type: String, default: 'Columbus Delivery' },
     deliveryFee: { type: Number, default: 10 },
@@ -127,8 +128,7 @@ const Settings = mongoose.model('Settings', settingsSchema);
 // SOCKET.IO
 // ================================
 io.on('connection', (socket) => {
-    console.log('🟢 WebSocket connected');
-    socket.on('disconnect', () => console.log('🔴 WebSocket disconnected'));
+    socket.on('disconnect', () => {});
 });
 
 // ================================
@@ -140,7 +140,6 @@ async function getMpesaAccessToken() {
     const key = process.env.MPESA_CONSUMER_KEY;
     const secret = process.env.MPESA_CONSUMER_SECRET;
     const auth = Buffer.from(`${key}:${secret}`).toString('base64');
-    
     const response = await axios.get(
         `${MPESA_BASE}/oauth/v1/generate?grant_type=client_credentials`,
         { headers: { Authorization: `Basic ${auth}` } }
@@ -257,7 +256,7 @@ app.get('/api/settings/public', async (req, res) => {
                 deliveryFee: settings?.deliveryFee || 10,
                 contactPhone: settings?.contactPhone || '',
                 footerMessage: settings?.footerMessage || 'Fast, reliable campus delivery',
-                featuredItems: settings?.featuredItems || [] // Expose to frontend
+                featuredItems: settings?.featuredItems || []
             }
         });
     } catch (error) { res.status(500).json({ success: false }); }
