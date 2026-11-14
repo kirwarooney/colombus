@@ -54,6 +54,11 @@
     .total-box { background: #e3f2fd; border: 2px solid #4d90fe; border-radius: 12px; padding: 15px; text-align: center; margin: 20px 0; }
     .total-box h3 { color: #0a2342; font-size: 22px; margin: 0; }
     
+    .payment-options { background: #f9f9f9; border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+    .payment-options label { display: flex; align-items: center; gap: 10px; font-weight: normal; margin-bottom: 8px; cursor: pointer; color: #0a2342; font-size: 14px; font-family: Arial, sans-serif; }
+    .payment-options input[type="radio"] { width: auto; transform: scale(1.4); margin-right: 4px; accent-color: #4d90fe; }
+    .option-desc { font-size: 11px; color: #888; margin-left: 26px; margin-top: -4px; margin-bottom: 10px; font-style: italic; }
+
     .btn-book-now { width: 100%; background: #4d90fe; color: white; border: none; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-book-now:disabled { background: #95a5a6; cursor: not-allowed; }
     .btn-back-text { text-align: center; color: #7f8c8d; font-size: 14px; cursor: pointer; margin-bottom: 20px; display: block; text-decoration: none; }
@@ -111,11 +116,26 @@
         <div class="form-group"><label>What do you want? *</label><textarea id="itemDescription">General Order</textarea></div>
 
         <div class="form-row">
-          <div class="form-group"><label>Amount (KES) *</label><input id="goodsAmount" type="number" value="0" oninput="calculateTotal()"></div>
+          <div class="form-group"><label>Total Cost of Goods (KES) *</label><input id="goodsAmount" type="number" value="0" oninput="calculateTotal()"></div>
           <div class="form-group"><label>Quantity *</label><input id="quantity" type="number" value="1" oninput="calculateTotal()"></div>
         </div>
 
-        <div class="total-box"><h3>💰 Total: <span id="totalDisplay">10</span> KES</h3></div>
+        <!-- Payment Choices -->
+        <div class="payment-options">
+          <label>
+            <input type="radio" name="paymentOption" value="delivery_only" checked onchange="calculateTotal()">
+            <span>Pay <b>KES 10</b> delivery fee only</span>
+          </label>
+          <div class="option-desc">You will pay for the goods to the rider in cash</div>
+          
+          <label style="margin-bottom:0;">
+            <input type="radio" name="paymentOption" value="full_payment" onchange="calculateTotal()">
+            <span>Pay <b id="fullPaymentLabel">KES 10</b> full total now</span>
+          </label>
+          <div class="option-desc" style="margin-bottom:0;">Everything is paid upfront via M-Pesa.</div>
+        </div>
+
+        <div class="total-box"><h3>💰 You Pay Now: <span id="totalDisplay">10</span> KES</h3></div>
 
         <button class="btn-book-now" id="payBtn" onclick="payDeliveryFee()">✅ Order Items Now</button>
         <a class="btn-back-text" onclick="closeModal()">← Back</a>
@@ -137,6 +157,7 @@
         if (data.success) {
           DELIVERY_FEE = Number(data.settings.deliveryFee) || 10;
           renderFeaturedItems(data.settings.featuredItems || []);
+          calculateTotal();
         }
       } catch (e) { console.error(e); }
     }
@@ -151,7 +172,6 @@
       items.forEach(item => {
         const div = document.createElement('div');
         div.className = 'scroll-item';
-        // Base64 images will render here directly
         div.innerHTML = `
           <img src="${item.imageUrl}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
           <div class="item-name">${item.name}</div>
@@ -163,6 +183,17 @@
 
     function openModal(itemName = '') {
       if (itemName) document.getElementById('itemDescription').value = itemName;
+      
+      // --- AUTOFILL REGISTERED CLIENT DETAILS ---
+      const savedDetails = JSON.parse(localStorage.getItem('customerDetails'));
+      if (savedDetails) {
+        document.getElementById('hostel').value = savedDetails.hostel || '';
+        document.getElementById('room').value = savedDetails.room || '';
+        document.getElementById('customerName').value = savedDetails.customerName || '';
+        document.getElementById('phone').value = savedDetails.phone || '';
+      }
+      // ------------------------------------------
+
       document.getElementById('orderModal').classList.add('active');
     }
 
@@ -186,9 +217,25 @@
     }
 
     function calculateTotal() {
-      const goods = parseFloat(document.getElementById('goodsAmount').value) || 0;
-      const quantity = parseFloat(document.getElementById('quantity').value) || 0;
-      document.getElementById('totalDisplay').innerText = (goods * quantity) + DELIVERY_FEE;
+      const goodsTotal = parseFloat(document.getElementById('goodsAmount').value) || 0;
+      const grandTotal = goodsTotal + DELIVERY_FEE;
+
+      // Update the label for the full payment option
+      document.getElementById('fullPaymentLabel').innerText = "KES " + grandTotal;
+
+      const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
+      const payBtn = document.getElementById('payBtn');
+      const totalBox = document.getElementById('totalDisplay');
+
+      // IF THEY CHOOSE DELIVERY ONLY, THEY ONLY PAY KES 10 NOW
+      if (paymentOption === 'delivery_only') {
+        payBtn.innerText = '🔒 Pay KES ' + DELIVERY_FEE + ' & Place Order';
+        totalBox.innerText = DELIVERY_FEE; 
+      } else {
+        // IF THEY CHOOSE FULL PAYMENT, THEY PAY GOODS + DELIVERY FEE
+        payBtn.innerText = '🔒 Pay KES ' + grandTotal + ' & Place Order';
+        totalBox.innerText = grandTotal;
+      }
     }
 
     function showResult(msg, type) {
@@ -213,12 +260,12 @@
             clearInterval(pollInterval);
             showResult(`❌ You failed to pay the delivery fee. There will be no delivery 🚚. Please try again.`, "error");
             document.getElementById('payBtn').disabled = false;
-            document.getElementById('payBtn').innerText = "✅ Order Items Now";
+            calculateTotal();
           } else if (elapsed >= 90) {
             clearInterval(pollInterval);
             showResult(`⏱️ No response from M-Pesa. If you didn't enter your PIN, your order was NOT placed. Please try again.`, "warning");
             document.getElementById('payBtn').disabled = false;
-            document.getElementById('payBtn').innerText = "✅ Order Items Now";
+            calculateTotal();
           }
         } catch (e) { console.error(e); }
       }, 3000);
@@ -233,12 +280,21 @@
       const itemDescription = document.getElementById('itemDescription').value;
       const goodsAmount = document.getElementById('goodsAmount').value;
       const quantity = document.getElementById('quantity').value;
+      const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
 
       if (!hostel || !room || !customerName || !phone || !goodsAmount) {
         showResult("Please fill in all required fields.", "error"); return;
       }
 
-      const amountToCharge = DELIVERY_FEE; 
+      // --- SAVE DETAILS FOR NEXT TIME ---
+      const detailsToSave = { hostel, room, customerName, phone };
+      localStorage.setItem('customerDetails', JSON.stringify(detailsToSave));
+      // -----------------------------------
+
+      // Calculate the exact amount to send to M-Pesa based on their choice
+      const goodsTotal = parseFloat(goodsAmount) || 0;
+      const amountToCharge = paymentOption === 'full_payment' ? (goodsTotal + DELIVERY_FEE) : DELIVERY_FEE;
+
       const payBtn = document.getElementById('payBtn');
       payBtn.disabled = true; payBtn.innerText = "⏳ Processing...";
       showResult("Sending M-Pesa prompt...", "loading");
@@ -248,7 +304,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            phone, amount: amountToCharge, paymentOption: 'delivery_only',
+            phone, amount: amountToCharge, paymentOption: paymentOption,
             orderDetails: { hostel, room, customerName, shopName, itemDescription, goodsAmount, quantity, latitude: userLatitude, longitude: userLongitude }
           })
         });
@@ -257,11 +313,11 @@
         if (data.success && data.orderId) {
           startPolling(data.orderId, amountToCharge);
         } else {
-          payBtn.disabled = false; payBtn.innerText = "✅ Order Items Now";
+          payBtn.disabled = false; calculateTotal();
           showResult("❌ Failed to send prompt. Try again.", "error");
         }
       } catch (error) {
-        payBtn.disabled = false; payBtn.innerText = "✅ Order Items Now";
+        payBtn.disabled = false; calculateTotal();
         showResult("❌ Network error.", "error");
       }
     }
