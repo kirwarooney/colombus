@@ -3,36 +3,33 @@
 <head>
   <title>Welcome to Colombus Delivery</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  
-  <!-- Leaflet Map CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
     body { background: #f4f6f9; min-height: 100vh; color: #333; position: relative; overflow-x: hidden; }
     
+    /* Hero Header */
     .hero-header { background: #0a2342; color: white; padding: 40px 20px; text-align: center; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .hero-header h1 { font-size: 24px; margin-bottom: 8px; font-weight: bold; }
     .hero-header p { font-size: 14px; color: #b0c4de; }
     
+    /* Main Actions */
     .main-actions { padding: 30px 20px 20px; display: flex; flex-direction: column; gap: 15px; max-width: 500px; margin: 0 auto; }
     .btn-large-order { width: 100%; padding: 20px; background: #4d90fe; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; box-shadow: 0 6px 15px rgba(77, 144, 254, 0.3); transition: 0.2s; }
     .btn-large-order:active { transform: scale(0.98); background: #3a7bd5; }
-    
     .btn-track { width: 100%; padding: 15px; background: #ffc107; color: #0a2342; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; cursor: pointer; transition: 0.2s; }
     .btn-track:active { transform: scale(0.98); background: #e0a800; }
     
+    /* Popular Items */
     .section-title { padding: 20px 20px 10px; font-size: 18px; font-weight: bold; color: #0a2342; }
     .horizontal-scroll { display: flex; overflow-x: auto; gap: 15px; padding: 10px 20px 30px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
     .horizontal-scroll::-webkit-scrollbar { display: none; }
-    
     .scroll-item { min-width: 150px; border-radius: 15px; scroll-snap-align: start; overflow: hidden; background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
     .scroll-item img { width: 100%; height: 130px; object-fit: cover; }
     .scroll-item .item-name { padding: 10px 10px 5px; text-align: center; font-size: 13px; font-weight: bold; color: #333; }
-    .btn-buy-item { margin: 0 10px 10px; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; transition: 0.2s; }
+    .btn-buy-item { margin: 0 10px 10px; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; }
     .btn-buy-item:active { background: #219a52; }
 
+    /* Bottom Nav */
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 10; }
     .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: #777; gap: 4px; text-decoration: none; }
     .nav-item.active { color: #0a2342; font-weight: bold; }
@@ -55,24 +52,30 @@
     .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; background: #fafafa; outline: none; }
     .form-group input:focus, .form-group textarea:focus { border-color: #4d90fe; background: white; }
 
-    /* Map Styles */
-    #map { width: 100%; height: 250px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #ddd; z-index: 1;}
-    .locate-btn { width: 100%; padding: 10px; background: #e3f2fd; color: #0a2342; border: 1px solid #4d90fe; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-    .locate-btn:active { background: #d0e8ff; }
-    .coords-text { font-size: 11px; color: #555; text-align: center; margin-bottom: 15px; }
+    .pin-btn { width: 100%; padding: 12px; background: #e3f2fd; color: #0a2342; border: 1px dashed #4d90fe; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+    .pin-btn.success { background: #e8f8f5; color: #27ae60; border-color: #27ae60; border-style: solid; }
+    .pin-status { font-size: 11px; color: #777; text-align: center; margin-top: 5px; }
 
-    /* Total Box */
+    /* Payment Options */
+    .payment-options { background: #f9f9f9; border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+    .payment-options label { display: flex; align-items: center; gap: 10px; font-weight: normal; margin-bottom: 8px; cursor: pointer; color: #0a2342; font-size: 14px; }
+    .payment-options input[type="radio"] { width: auto; transform: scale(1.4); margin-right: 4px; accent-color: #4d90fe; }
+    .option-desc { font-size: 11px; color: #888; margin-left: 26px; margin-top: -4px; margin-bottom: 10px; font-style: italic; }
+
     .total-box { background: #e3f2fd; border: 2px solid #4d90fe; border-radius: 12px; padding: 15px; text-align: center; margin: 20px 0; }
     .total-box h3 { color: #0a2342; font-size: 22px; margin: 0; }
     
     .btn-book-now { width: 100%; background: #4d90fe; color: white; border: none; padding: 16px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
     .btn-book-now:active { background: #3a7bd5; }
+    .btn-book-now:disabled { background: #95a5a6; cursor: not-allowed; }
     .btn-back-text { text-align: center; color: #7f8c8d; font-size: 14px; cursor: pointer; margin-bottom: 20px; display: block; text-decoration: none; }
     
+    /* Result Messages */
     .result { text-align: center; font-weight: bold; margin-top: 15px; padding: 12px; border-radius: 10px; display: none; font-size: 14px; }
     .result.success { background: #d4edda; color: #155724; display: block; }
     .result.error { background: #f8d7da; color: #721c24; display: block; }
     .result.loading { background: #cce5ff; color: #004085; display: block; }
+    .result.warning { background: #fff8e1; color: #7f5f00; display: block; }
   </style>
 </head>
 <body>
@@ -99,6 +102,7 @@
     </div>
   </div>
 
+  <!-- ORDER MODAL -->
   <div class="modal-overlay" id="orderModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -112,27 +116,37 @@
         </div>
         
         <div class="form-group">
-          <label>Pin Exact Location (Tap Map or Use GPS)</label>
-          <div id="map"></div>
-          <button type="button" class="locate-btn" id="locate-btn">📍 Use My Current Location</button>
-          <div class="coords-text">Selected: <span id="coords">None</span></div>
-          
-          <!-- Hidden inputs for form submission -->
-          <input type="hidden" id="lat">
-          <input type="hidden" id="lng">
+          <label>Pin Exact Location (Optional)</label>
+          <button class="pin-btn" id="pinBtn" onclick="pinLocation()">📍 Tap to Pin My Location</button>
+          <div class="pin-status" id="pinStatus">Helps the rider find you faster</div>
         </div>
 
         <div class="form-group"><label>Your Name *</label><input id="customerName" type="text" placeholder="e.g. John Doe"></div>
         <div class="form-group"><label>Shop Name *</label><input id="shopName" type="text" value="Any Shop"></div>
         <div class="form-group"><label>Phone Number *</label><input id="phone" type="tel" placeholder="e.g. 0712345678"></div>
-        <div class="form-group"><label>What do you want? *</label><textarea id="itemDescription" placeholder="e.g. 2 Chapatis">General Order</textarea></div>
+        <div class="form-group"><label>What do you want? *</label><textarea id="itemDescription">General Order</textarea></div>
 
         <div class="form-row">
-          <div class="form-group"><label>Cost of Goods (KES) *</label><input id="goodsAmount" type="number" value="0" oninput="calculateTotal()"></div>
+          <div class="form-group"><label>Total Cost of Goods (KES) *</label><input id="goodsAmount" type="number" value="0" oninput="calculateTotal()"></div>
           <div class="form-group"><label>Quantity *</label><input id="quantity" type="number" value="1" oninput="calculateTotal()"></div>
         </div>
 
-        <div class="total-box"><h3>💰 Total: <span id="totalDisplay">10</span> KES</h3></div>
+        <!-- Payment Options -->
+        <div class="payment-options">
+          <label>
+            <input type="radio" name="paymentOption" value="delivery_only" checked onchange="calculateTotal()">
+            <span>Pay <b>KES 10</b> delivery fee only</span>
+          </label>
+          <div class="option-desc">You will pay for the goods to the rider in cash</div>
+          
+          <label style="margin-bottom:0;">
+            <input type="radio" name="paymentOption" value="full_payment" onchange="calculateTotal()">
+            <span>Pay <b id="fullPaymentLabel">KES 10</b> full total now</span>
+          </label>
+          <div class="option-desc" style="margin-bottom:0;">Everything is paid upfront via M-Pesa.</div>
+        </div>
+
+        <div class="total-box"><h3>💰 You Pay Now: <span id="totalDisplay">10</span> KES</h3></div>
 
         <button class="btn-book-now" id="payBtn" onclick="payDeliveryFee()">✅ Order Items Now</button>
         <a class="btn-back-text" onclick="closeModal()">← Back</a>
@@ -145,46 +159,16 @@
     let DELIVERY_FEE = 10;
     let userLatitude = null;
     let userLongitude = null;
-    let map;
-    let marker;
-    let mapInitialized = false;
+    let pollInterval = null;
 
-    // Initialize Map when modal opens
     function openModal() {
       document.getElementById('orderModal').classList.add('active');
-      
-      if (!mapInitialized) {
-        setTimeout(() => {
-          // Center map on Kenya
-          map = L.map('map').setView([0.0236, 37.9062], 7);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
-          }).addTo(map);
-
-          // Allow clicking on map to drop pin
-          map.on('click', function(e) {
-            setPin(e.latlng.lat, e.latlng.lng);
-          });
-
-          // Locate Button Logic
-          document.getElementById('locate-btn').addEventListener('click', function() {
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(function(position) {
-                setPin(position.coords.latitude, position.coords.longitude);
-              }, function(error) {
-                alert("GPS failed. Please tap on the map manually.");
-              }, { enableHighAccuracy: true });
-            } else {
-              alert("Geolocation is not supported.");
-            }
-          });
-          
-          mapInitialized = true;
-        }, 300); // Small delay to allow modal to slide up
-      } else {
-        // Fix map rendering glitch when modal reopens
-        setTimeout(() => { map.invalidateSize(); }, 300);
+      const savedDetails = JSON.parse(localStorage.getItem('customerDetails'));
+      if (savedDetails) {
+        document.getElementById('hostel').value = savedDetails.hostel || '';
+        document.getElementById('room').value = savedDetails.room || '';
+        document.getElementById('customerName').value = savedDetails.customerName || '';
+        document.getElementById('phone').value = savedDetails.phone || '';
       }
     }
 
@@ -192,76 +176,89 @@
       document.getElementById('orderModal').classList.remove('active');
     }
 
-    // Set Pin on Map
-    function setPin(lat, lng) {
-      if (marker) {
-        marker.setLatLng([lat, lng]);
-      } else {
-        marker = L.marker([lat, lng], {draggable: true}).addTo(map);
-        marker.on('dragend', function(event) {
-          let position = marker.getLatLng();
-          updateCoords(position.lat, position.lng);
-        });
-      }
-      map.setView([lat, lng], 16);
-      updateCoords(lat, lng);
-    }
+    // Standard GPS Location
+    function pinLocation() {
+      const btn = document.getElementById('pinBtn');
+      const status = document.getElementById('pinStatus');
 
-    // Update Hidden Inputs
-    function updateCoords(lat, lng) {
-      userLatitude = lat;
-      userLongitude = lng;
-      document.getElementById('lat').value = lat;
-      document.getElementById('lng').value = lng;
-      document.getElementById('coords').innerText = lat.toFixed(5) + ", " + lng.toFixed(5);
-    }
-
-    async function loadSettings() {
-      try {
-        const res = await fetch('/api/settings/public');
-        const data = await res.json();
-        if (data.success) {
-          DELIVERY_FEE = Number(data.settings.deliveryFee) || 10;
-          renderFeaturedItems(data.settings.featuredItems || []);
-          calculateTotal();
-        }
-      } catch (e) { console.error(e); }
-    }
-
-    function renderFeaturedItems(items) {
-      const container = document.getElementById('featuredScroll');
-      if (!items || items.length === 0) {
-        container.innerHTML = "<p style='font-size:12px; color:#777; padding:10px;'>No items available yet.</p>";
+      if (!navigator.geolocation) {
+        status.innerText = "❌ Location not supported on this device.";
         return;
       }
-      container.innerHTML = '';
-      items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'scroll-item';
-        div.innerHTML = `
-          <img src="${item.imageUrl}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
-          <div class="item-name">${item.name}</div>
-          <button class="btn-buy-item" onclick="openModalWithItem('${item.name}')">🛒 Buy</button>
-        `;
-        container.appendChild(div);
-      });
-    }
 
-    function openModalWithItem(itemName) {
-      document.getElementById('itemDescription').value = itemName;
-      openModal();
+      status.innerText = "📡 Getting your location...";
+      btn.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          userLatitude = position.coords.latitude;
+          userLongitude = position.coords.longitude;
+          btn.classList.add('success');
+          btn.innerText = "✅ Location Pinned!";
+          status.innerText = `📍 Lat: ${userLatitude.toFixed(5)}, Long: ${userLongitude.toFixed(5)}`;
+          btn.disabled = false;
+        },
+        (error) => {
+          status.innerText = "❌ Could not get location. Please enable GPS or type your hostel.";
+          btn.disabled = false;
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
     }
 
     function calculateTotal() {
       const goods = parseFloat(document.getElementById('goodsAmount').value) || 0;
       const quantity = parseFloat(document.getElementById('quantity').value) || 0;
-      document.getElementById('totalDisplay').innerText = (goods * quantity) + DELIVERY_FEE;
+      const goodsTotal = goods * quantity;
+      const grandTotal = goodsTotal + DELIVERY_FEE;
+
+      document.getElementById('fullPaymentLabel').innerText = "KES " + grandTotal;
+
+      const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
+      const totalBox = document.getElementById('totalDisplay');
+      const payBtn = document.getElementById('payBtn');
+
+      if (paymentOption === 'delivery_only') {
+        totalBox.innerText = DELIVERY_FEE;
+        payBtn.innerText = `✅ Pay KES ${DELIVERY_FEE} & Place Order`;
+      } else {
+        totalBox.innerText = grandTotal;
+        payBtn.innerText = `✅ Pay KES ${grandTotal} & Place Order`;
+      }
     }
 
     function showResult(msg, type) {
       const res = document.getElementById('result');
       res.className = 'result ' + type;
       res.innerText = msg;
+    }
+
+    function startPolling(orderId, amountToCharge) {
+      let elapsed = 0;
+      if (pollInterval) clearInterval(pollInterval);
+      
+      pollInterval = setInterval(async () => {
+        elapsed += 3;
+        try {
+          const res = await fetch('/api/order-status/' + orderId);
+          const data = await res.json();
+          
+          if (data.success && data.status === 'Paid') {
+            clearInterval(pollInterval);
+            showResult(`✅ Payment Confirmed! You paid KES ${amountToCharge}. Your order is placed.`, "success");
+          } else if (data.success && data.status === 'Failed') {
+            clearInterval(pollInterval);
+            showResult(`❌ You failed to pay. There will be no delivery 🚚. Please try again.`, "error");
+            document.getElementById('payBtn').disabled = false;
+            calculateTotal();
+          } else if (elapsed >= 90) {
+            clearInterval(pollInterval);
+            showResult(`⏱️ No response from M-Pesa. If you didn't enter your PIN, your order was NOT placed. Please try again.`, "warning");
+            document.getElementById('payBtn').disabled = false;
+            calculateTotal();
+          }
+        } catch (e) { console.error(e); }
+      }, 3000);
     }
 
     async function payDeliveryFee() {
@@ -273,12 +270,18 @@
       const itemDescription = document.getElementById('itemDescription').value;
       const goodsAmount = document.getElementById('goodsAmount').value;
       const quantity = document.getElementById('quantity').value;
+      const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
 
       if (!hostel || !room || !customerName || !phone || !goodsAmount) {
         showResult("Please fill in all required fields.", "error"); return;
       }
 
-      const amountToCharge = DELIVERY_FEE; 
+      // Save details for next time
+      localStorage.setItem('customerDetails', JSON.stringify({ hostel, room, customerName, phone }));
+
+      const goodsTotal = (parseFloat(goodsAmount) || 0) * (parseFloat(quantity) || 0);
+      const amountToCharge = paymentOption === 'full_payment' ? (goodsTotal + DELIVERY_FEE) : DELIVERY_FEE;
+
       const payBtn = document.getElementById('payBtn');
       payBtn.disabled = true; payBtn.innerText = "⏳ Processing...";
       showResult("Sending M-Pesa prompt...", "loading");
@@ -288,25 +291,57 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            phone, amount: amountToCharge, paymentOption: 'delivery_only',
-            orderDetails: { hostel, room, customerName, shopName, itemDescription, goodsAmount, quantity, latitude: userLatitude, longitude: userLongitude }
+            phone, 
+            amount: amountToCharge,
+            paymentOption: paymentOption,
+            orderDetails: { 
+              hostel, room, customerName, shopName, itemDescription, 
+              goodsAmount, quantity, 
+              latitude: userLatitude, longitude: userLongitude 
+            }
           })
         });
 
         const data = await response.json();
-        if (data.success) {
-          showResult("✅ Request sent! Check your phone for the M-Pesa PIN prompt.", "success");
+        
+        if (data.success && data.orderId) {
+          startPolling(data.orderId, amountToCharge);
         } else {
           showResult("❌ Failed to send prompt. Try again.", "error");
-          payBtn.disabled = false; payBtn.innerText = "✅ Order Items Now";
+          payBtn.disabled = false; calculateTotal();
         }
       } catch (error) {
-        showResult("❌ Network error.", "error");
-        payBtn.disabled = false; payBtn.innerText = "✅ Order Items Now";
+        showResult("❌ Network error. Please try again.", "error");
+        payBtn.disabled = false; calculateTotal();
       }
     }
 
-    loadSettings();
+    // Load settings on page load
+    fetch('/api/settings/public')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          DELIVERY_FEE = Number(data.settings.deliveryFee) || 10;
+          const container = document.getElementById('featuredScroll');
+          const items = data.settings.featuredItems || [];
+          if (items.length === 0) {
+            container.innerHTML = "<p style='font-size:12px; color:#777; padding:10px;'>No items available yet.</p>";
+          } else {
+            container.innerHTML = '';
+            items.forEach(item => {
+              container.innerHTML += `
+                <div class="scroll-item">
+                  <img src="${item.imageUrl}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                  <div class="item-name">${item.name}</div>
+                  <button class="btn-buy-item" onclick="document.getElementById('itemDescription').value='${item.name}'; openModal();">🛒 Buy</button>
+                </div>
+              `;
+            });
+          }
+          calculateTotal();
+        }
+      })
+      .catch(e => console.error(e));
   </script>
 </body>
 </html>
