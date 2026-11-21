@@ -174,7 +174,7 @@ app.post('/api/pay', async (req, res) => {
         // ==========================================
         // 📲 SEND PUSH NOTIFICATION TO ADMIN APP
         // ==========================================
-        const ADMIN_PUSH_TOKEN = 'ExponentPushToken[zRl0_RD6mk50GU-nplIW5f]'; 
+        const ADMIN_PUSH_TOKEN = 'ExponentPushToken[U263jAFqxFUl7yHNIl-jLK]';
         
         if (Expo.isExpoPushToken(ADMIN_PUSH_TOKEN)) {
             const messages = [{
