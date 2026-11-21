@@ -8,12 +8,15 @@ const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
 const session = require('express-session');
+const { Expo } = require('expo-server-sdk'); // NEW: Push Notifications
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+const expo = new Expo(); // NEW: Initialize Expo
 
 app.use(cors());
+// Increased limits to allow base64 image uploads if needed
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -167,7 +170,37 @@ app.post('/api/pay', async (req, res) => {
             status: 'Pending', paymentMethod: 'daraja'
         });
         await newOrder.save();
+        
+        // WebSocket update for Web Dashboard
         io.emit('new-order', newOrder);
+
+        // ==========================================
+        // 📲 SEND PUSH NOTIFICATION TO ADMIN APP
+        // ==========================================
+        // ⚠️ REPLACE THIS WITH YOUR ACTUAL TOKEN FROM THE ADMIN APP
+        const ADMIN_PUSH_TOKEN = 'ExponentPushToken[YOUR_TOKEN_HERE]'; 
+        
+        if (Expo.isExpoPushToken(ADMIN_PUSH_TOKEN)) {
+            const messages = [{
+                to: ADMIN_PUSH_TOKEN,
+                sound: 'default',
+                title: '🚨 NEW ORDER RECEIVED!',
+                body: `Customer: ${orderDetails.customerName}\nItem: ${orderDetails.itemDescription}\nPhone: ${orderDetails.phone}`,
+                data: { orderId: newOrder._id },
+                priority: 'high', 
+                channelId: 'orders' // Must match the channel created in the Admin App
+            }];
+
+            try {
+                await expo.sendPushNotificationsAsync(messages);
+                console.log('📲 Admin notification sent!');
+            } catch (error) {
+                console.error('Error sending push notification:', error);
+            }
+        } else {
+            console.log('⚠️ Invalid Expo push token. Notification not sent.');
+        }
+        // ==========================================
 
         const token = await getMpesaAccessToken();
         const date = new Date();
