@@ -184,7 +184,7 @@ app.post('/api/pay', async (req, res) => {
                 body: `Customer: ${orderDetails.customerName}\nItem: ${orderDetails.itemDescription}\nPhone: ${orderDetails.phone}`,
                 data: { orderId: newOrder._id },
                 priority: 'high', 
-                channelId: 'orders' 
+                channelId: 'orders_v2' 
             }];
 
             try {
