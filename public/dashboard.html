@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Columbus Delivery - Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#008069">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
@@ -56,6 +58,7 @@
       padding: 4px 8px;
       border-radius: 12px;
     }
+    .status-badge.offline .live-dot { background: #f59e0b; animation: none; }
     .btn-icon {
       background: transparent;
       border: none;
@@ -217,6 +220,8 @@
       border-bottom: 1px solid #f0f2f5;
       cursor: pointer;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
       transition: background 0.15s;
       position: relative;
     }
@@ -367,6 +372,8 @@
     .chat-messages {
       flex: 1;
       overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
       padding: 16px;
       display: flex;
       flex-direction: column;
@@ -390,6 +397,7 @@
       line-height: 1.45;
       box-shadow: 0 1px 1px rgba(0,0,0,0.1);
       position: relative;
+      overflow-wrap: anywhere;
     }
     .bubble.incoming {
       background: #fff;
@@ -422,7 +430,7 @@
     /* Bottom WhatsApp Action Tray inside Message View */
     .chat-footer {
       background: #f0f2f5;
-      padding: 10px 12px 16px;
+      padding: 10px 12px calc(16px + env(safe-area-inset-bottom, 0px));
       border-top: 1px solid #d1d7db;
       display: flex;
       flex-direction: column;
@@ -466,7 +474,7 @@
   <div class="header" id="mainHeader">
     <div class="header-title" id="headerTitle">Columbus Delivery</div>
     <div class="header-actions" id="normalActions">
-      <span class="status-badge"><span class="live-dot"></span>Live</span>
+      <span class="status-badge" id="liveBadge"><span class="live-dot"></span><span id="liveText">Live</span></span>
       <a href="/settings.html" class="btn-icon">⚙️</a>
       <button class="btn-icon" onclick="logout()">Logout</button>
     </div>
@@ -545,6 +553,54 @@
     let activeOrderId = null;
     let pressTimer = null;
     let longPressTriggered = false;
+    let pressConsumed = false;
+    let lastTouchTime = 0;
+    let hasConnectedOnce = false;
+    let pushedKind = null; // 'chat' | 'sel' : one history entry so the Android back button closes them
+
+    // --- SMALL HELPERS ---
+    // Customer-typed text is escaped before it is placed into the page.
+    function esc(v) {
+      return String(v === undefined || v === null ? '' : v).replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+      ));
+    }
+
+    function detailLine(icon, label, value) {
+      if (value === undefined || value === null || String(value).trim() === '') return '';
+      return `${icon} <b>${label}:</b> ${esc(value)}<br>`;
+    }
+
+    // WhatsApp-style time: time today, "Yesterday", then the date
+    function formatListTime(dateValue) {
+      const d = new Date(dateValue);
+      const now = new Date();
+      const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startThat = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const diffDays = Math.round((startToday - startThat) / 86400000);
+      if (diffDays <= 0) return d.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' });
+      if (diffDays === 1) return 'Yesterday';
+      return d.toLocaleDateString('en-KE', { day: '2-digit', month: 'short' });
+    }
+
+    // --- ANDROID BACK BUTTON SUPPORT (chat view + selection mode) ---
+    function pushUiState(kind) {
+      if (pushedKind) return;
+      pushedKind = kind;
+      try { history.pushState({ ui: kind }, ''); } catch (e) {}
+    }
+    function popUiState(kind) {
+      if (pushedKind !== kind) return;
+      pushedKind = null;
+      try { history.back(); } catch (e) {}
+    }
+    window.addEventListener('popstate', () => {
+      if (!pushedKind) return;
+      const kind = pushedKind;
+      pushedKind = null;
+      if (kind === 'chat') closeOrderChat();
+      else exitSelectionMode();
+    });
 
     function toggleManageItems() {
       const body = document.getElementById('manageItemsBody');
@@ -559,19 +615,19 @@
         const res = await fetch('/api/settings');
         if (res.status === 401) { window.location.href = '/login.html'; return; }
         const data = await res.json();
-        
+
         let items = data.settings?.featuredItems || [];
         while (items.length < 5) items.push({ imageUrl: '', name: '' });
 
         const fContainer = document.getElementById('featuredItemsContainer');
         fContainer.innerHTML = '';
-        
+
         items.slice(0, 5).forEach((item, i) => {
           fContainer.innerHTML += `
             <div class="item-input-row">
-              <input type="text" id="itemName${i}" placeholder="Item Name (e.g. Chapati)" value="${item.name || ''}">
-              <input type="text" id="itemImgUrl${i}" placeholder="Paste Image URL here (https://...)" value="${item.imageUrl || ''}" oninput="updatePreview(${i})">
-              <img id="preview${i}" src="${item.imageUrl || ''}" class="img-preview" style="${item.imageUrl ? 'display:block;' : ''}" onerror="this.style.display='none'">
+              <input type="text" id="itemName${i}" placeholder="Item Name (e.g. Chapati)" value="${esc(item.name)}">
+              <input type="text" id="itemImgUrl${i}" placeholder="Paste Image URL here (https://...)" value="${esc(item.imageUrl)}" oninput="updatePreview(${i})">
+              <img id="preview${i}" src="${esc(item.imageUrl)}" class="img-preview" style="${item.imageUrl ? 'display:block;' : ''}" onerror="this.style.display='none'">
             </div>
           `;
         });
@@ -609,13 +665,13 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ featuredItems: newItems })
         });
-        
+
         if (!res.ok) throw new Error("Failed to save to database");
 
         status.innerText = "✅ Saved successfully!";
         status.style.color = "green";
         setTimeout(() => status.innerText = "", 4000);
-        
+
       } catch (error) {
         status.innerText = "❌ " + error.message;
         status.style.color = "red";
@@ -701,8 +757,8 @@
         const normalizedStatus = (o.status || 'Pending').replace(/\s/g, '');
         if (currentFilter !== 'All' && normalizedStatus !== currentFilter && o.status !== currentFilter) return false;
         if (search) {
-          return (o.customerName || '').toLowerCase().includes(search) || 
-                 (o.phone || '').toLowerCase().includes(search) || 
+          return (o.customerName || '').toLowerCase().includes(search) ||
+                 (o.phone || '').toLowerCase().includes(search) ||
                  (o.shopName || '').toLowerCase().includes(search) ||
                  (o.hostel || '').toLowerCase().includes(search) ||
                  (o.itemDescription || '').toLowerCase().includes(search);
@@ -717,13 +773,13 @@
     }
 
     function getInitials(name) {
-      return (name || '?').trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+      return (name || '?').trim().split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
     }
 
     function renderOrderRow(order) {
       const statusClass = (order.status || 'Pending').replace(/\s/g, '');
       const isSelected = selectedOrderIds.has(order._id);
-      const timeStr = new Date(order.createdAt).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' });
+      const timeStr = formatListTime(order.createdAt);
 
       const row = document.createElement('div');
       row.className = `chat-row ${isSelected ? 'selected' : ''}`;
@@ -731,44 +787,60 @@
 
       row.innerHTML = `
         <div class="avatar">
-          ${getInitials(order.customerName)}
+          ${esc(getInitials(order.customerName))}
           <span class="check-badge">✓</span>
         </div>
         <div class="chat-info">
           <div class="chat-top">
-            <div class="chat-name">${order.customerName}</div>
-            <div class="chat-time">${timeStr}</div>
+            <div class="chat-name">${esc(order.customerName)}</div>
+            <div class="chat-time">${esc(timeStr)}</div>
           </div>
           <div class="chat-bottom">
-            <div class="chat-preview">📦 ${order.itemDescription} • KES ${order.goodsAmount}</div>
-            <span class="status-pill ${statusClass}">${order.status}</span>
+            <div class="chat-preview">📦 ${esc(order.itemDescription)} • KES ${esc(order.goodsAmount)}</div>
+            <span class="status-pill ${statusClass}">${esc(order.status)}</span>
           </div>
         </div>
       `;
 
-      // Long-press handlers (Touch & Mouse)
-      const startPress = () => {
+      // Long-press handlers (touch and mouse).
+      // A press can only select once (the timer and the contextmenu event used to both toggle),
+      // and the mouse events a phone fires after a touch are ignored.
+      const beginPress = () => {
         longPressTriggered = false;
-        pressTimer = setTimeout(() => {
-          longPressTriggered = true;
-          toggleSelectOrder(order._id);
-          if (navigator.vibrate) navigator.vibrate(40);
-        }, 500);
+        pressConsumed = false;
+        clearTimeout(pressTimer);
+      };
+
+      const triggerLongPress = () => {
+        if (pressConsumed) return;
+        pressConsumed = true;
+        longPressTriggered = true;
+        toggleSelectOrder(order._id);
+        if (navigator.vibrate) navigator.vibrate(40);
       };
 
       const cancelPress = () => {
         clearTimeout(pressTimer);
       };
 
-      row.addEventListener('touchstart', startPress, { passive: true });
-      row.addEventListener('touchend', cancelPress);
+      row.addEventListener('touchstart', () => {
+        lastTouchTime = Date.now();
+        beginPress();
+        pressTimer = setTimeout(triggerLongPress, 500);
+      }, { passive: true });
+      row.addEventListener('touchend', () => { lastTouchTime = Date.now(); cancelPress(); });
+      row.addEventListener('touchcancel', cancelPress);
       row.addEventListener('touchmove', cancelPress);
-      row.addEventListener('mousedown', (e) => { if (e.button === 0) startPress(); });
+      row.addEventListener('mousedown', (e) => {
+        if (Date.now() - lastTouchTime < 1000) return;
+        beginPress();
+        if (e.button === 0) pressTimer = setTimeout(triggerLongPress, 500);
+      });
       row.addEventListener('mouseup', cancelPress);
       row.addEventListener('mouseleave', cancelPress);
       row.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        toggleSelectOrder(order._id);
+        triggerLongPress();
       });
 
       // Tap handler: Select if already in selection mode, otherwise open like WhatsApp chat
@@ -815,11 +887,13 @@
         title.innerText = `${selectedOrderIds.size} selected`;
         normalActions.style.display = 'none';
         selectionActions.style.display = 'flex';
+        pushUiState('sel');
       } else {
         header.classList.remove('selection-mode');
         title.innerText = 'Columbus Delivery';
         normalActions.style.display = 'flex';
         selectionActions.style.display = 'none';
+        popUiState('sel');
       }
     }
 
@@ -862,23 +936,32 @@
 
       let mapLink = '';
       if (order.latitude && order.longitude) {
-        mapLink = `<br><a class="map-link" target="_blank" href="https://www.google.com/maps?q=${order.latitude},${order.longitude}">📍 Open Customer Location</a>`;
+        mapLink = `<a class="map-link" target="_blank" href="https://www.google.com/maps?q=${order.latitude},${order.longitude}">📍 Open Customer Location</a>`;
       }
 
+      const incomingLines = [
+        detailLine('📦', 'Item', order.itemDescription),
+        Number(order.quantity) > 1 ? detailLine('🔢', 'Quantity', order.quantity) : '',
+        detailLine('🏪', 'Shop', order.shopName),
+        `🏠 <b>Dropoff:</b> ${esc(order.hostel)}, Room ${esc(order.room)}<br>`,
+        detailLine('📞', 'Phone', order.phone),
+        detailLine('🕒', 'Delivery time', order.deliveryTime),
+        detailLine('📝', 'Note', order.extraInfo)
+      ].join('');
+
       document.getElementById('modalMessages').innerHTML = `
-        <div class="date-chip">${dateStr}</div>
+        <div class="date-chip">${esc(dateStr)}</div>
         <div class="bubble incoming">
           <strong>New Order #${ref}</strong><br><br>
-          📦 <b>Item:</b> ${order.itemDescription}<br>
-          🏠 <b>Dropoff:</b> ${order.hostel}, Room ${order.room}<br>
-          📞 <b>Phone:</b> ${order.phone}
+          ${incomingLines}
           ${mapLink}
-          <div class="bubble-time">${dateStr}</div>
+          <div class="bubble-time">${esc(dateStr)}</div>
         </div>
         <div class="bubble outgoing">
-          💰 <b>Goods Amount:</b> KES ${order.goodsAmount}<br>
-          🚚 <b>Delivery Fee:</b> KES ${order.deliveryFee}<br>
-          📌 <b>Current Status:</b> ${order.status}
+          💰 <b>Goods Amount:</b> KES ${esc(order.goodsAmount)}<br>
+          🚚 <b>Delivery Fee:</b> KES ${esc(order.deliveryFee)}<br>
+          ${detailLine('🧾', 'M-Pesa Receipt', order.mpesaReceipt)}
+          📌 <b>Current Status:</b> ${esc(order.status)}
           <div class="bubble-time">✓✓</div>
         </div>
       `;
@@ -902,11 +985,15 @@
       `;
 
       document.getElementById('chatModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      pushUiState('chat');
     }
 
     function closeOrderChat() {
       activeOrderId = null;
       document.getElementById('chatModal').classList.remove('open');
+      document.body.style.overflow = '';
+      popUiState('chat');
     }
 
     async function deleteActiveOrder() {
@@ -944,6 +1031,26 @@
       if (!confirm("Log out?")) return;
       try { await fetch('/api/logout', { method: 'POST' }); } finally { window.location.href = '/login.html'; }
     }
+
+    // --- LIVE CONNECTION ---
+    function setLive(on) {
+      const badge = document.getElementById('liveBadge');
+      const text = document.getElementById('liveText');
+      badge.classList.toggle('offline', !on);
+      text.innerText = on ? 'Live' : 'Offline';
+    }
+
+    socket.on('connect', () => {
+      setLive(true);
+      // After a reconnect, catch up on anything missed while the phone was asleep
+      if (hasConnectedOnce) { loadOrders(); loadVisits(); }
+      hasConnectedOnce = true;
+    });
+    socket.on('disconnect', () => setLive(false));
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) { loadOrders(); loadVisits(); }
+    });
 
     socket.on('new-order', (order) => {
       allOrders.unshift(order);
