@@ -2,114 +2,507 @@
 <html>
 <head>
   <title>Columbus Delivery - Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body { font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #efeae2; background-image: radial-gradient(rgba(11, 20, 26, 0.05) 1px, transparent 1px); background-size: 20px 20px; min-height: 100vh; color: #111b21; padding-bottom: 40px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #efeae2;
+      color: #111b21;
+      min-height: 100vh;
+      padding-bottom: 30px;
+    }
 
-    /* ===== Header (WhatsApp green top bar) ===== */
-    .header { background: #008069; color: #fff; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(11, 20, 26, 0.3); }
-    .header-title { font-size: 20px; font-weight: 600; }
-    .header-title span { color: #d9fdd3; font-weight: 400; }
-    .header-actions { display: flex; gap: 6px; align-items: center; }
-    .live-dot { display: inline-block; width: 8px; height: 8px; background: #25d366; border-radius: 50%; margin-right: 4px; animation: pulse 1.5s infinite; }
+    /* WhatsApp Top Header */
+    .header {
+      background: #008069;
+      color: #fff;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    }
+    .header.selection-mode {
+      background: #005c4b;
+    }
+    .header-title {
+      font-size: 19px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #25d366;
+      border-radius: 50%;
+      margin-right: 4px;
+      animation: pulse 1.5s infinite;
+    }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .status-badge { font-size: 12px; font-weight: 500; margin-right: 4px; opacity: 0.95; }
-    .btn-icon { display: inline-block; background: rgba(255, 255, 255, 0.14); border: none; color: #fff; padding: 7px 13px; border-radius: 18px; font-size: 13px; cursor: pointer; text-decoration: none; font-family: inherit; }
-    .btn-icon:hover { background: rgba(255, 255, 255, 0.26); color: #fff; }
+    .status-badge {
+      font-size: 11px;
+      font-weight: 500;
+      background: rgba(255,255,255,0.15);
+      padding: 4px 8px;
+      border-radius: 12px;
+    }
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-icon:hover { background: rgba(255,255,255,0.14); }
 
-    /* ===== Stats ===== */
-    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 12px; max-width: 700px; margin: 0 auto; }
-    .stat-card { background: #fff; border-radius: 12px; padding: 14px; text-align: left; box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13); border-left: 4px solid #00a884; }
-    .stat-card .num { font-size: 24px; font-weight: 600; color: #111b21; }
-    .stat-card .lbl { font-size: 12px; color: #667781; margin-top: 3px; }
-    .stat-card.green .num { color: #00a884; }
-    .stat-card.orange { border-left-color: #f5a623; }
-    .stat-card.orange .num { color: #d98a00; }
-    .stat-card.blue { border-left-color: #53bdeb; }
-    .stat-card.blue .num { color: #027eb5; }
+    /* Compact WhatsApp Stats Strip */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: #fff;
+      border-bottom: 1px solid #e9edef;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .stat-card {
+      padding: 10px 6px;
+      text-align: center;
+      border-right: 1px solid #f0f2f5;
+    }
+    .stat-card:last-child { border-right: none; }
+    .stat-card .num { font-size: 15px; font-weight: 700; color: #008069; }
+    .stat-card.orange .num { color: #d97706; }
+    .stat-card.green .num { color: #15803d; }
+    .stat-card.blue .num { color: #0284c7; }
+    .stat-card .lbl { font-size: 10px; color: #667781; margin-top: 2px; }
 
-    /* ===== Manage Items ===== */
-    .manage-items { background: #fff; width: calc(100% - 24px); max-width: 676px; margin: 0 auto 14px; border-radius: 12px; padding: 16px; box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13); }
-    .manage-items h3 { color: #008069; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
-    .item-input-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid #e9edef; }
-    .item-input-row input[type="text"] { padding: 11px 15px; border: none; background: #f0f2f5; border-radius: 20px; font-size: 14px; font-family: inherit; color: #111b21; width: 100%; }
-    .item-input-row input[type="text"]:focus { outline: none; box-shadow: 0 0 0 2px #00a884; background: #fff; }
-    .img-preview { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #e9edef; display: none; margin-top: 5px; }
-    .btn-save-items { width: 100%; background: #00a884; color: white; border: none; padding: 12px; border-radius: 22px; font-weight: 600; cursor: pointer; margin-top: 8px; font-family: inherit; font-size: 15px; }
-    .btn-save-items:hover { background: #008069; }
+    /* Collapsible Manage Items Bar */
+    .manage-items-wrapper {
+      max-width: 700px;
+      margin: 0 auto;
+      background: #fff;
+      border-bottom: 1px solid #e9edef;
+    }
+    .manage-toggle {
+      width: 100%;
+      background: #f7f8fa;
+      border: none;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #008069;
+      cursor: pointer;
+    }
+    .manage-items {
+      display: none;
+      padding: 14px 16px;
+      background: #fff;
+      border-top: 1px solid #e9edef;
+    }
+    .manage-items.open { display: block; }
+    .item-input-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0f2f5;
+    }
+    .item-input-row input[type="text"] {
+      padding: 10px 12px;
+      border: 1px solid #d1d7db;
+      border-radius: 8px;
+      font-size: 13px;
+      width: 100%;
+      background: #f0f2f5;
+    }
+    .item-input-row input[type="text"]:focus {
+      outline: none;
+      background: #fff;
+      border-color: #008069;
+    }
+    .img-preview {
+      width: 56px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #d1d7db;
+      display: none;
+    }
+    .btn-save-items {
+      width: 100%;
+      background: #008069;
+      color: #fff;
+      border: none;
+      padding: 11px;
+      border-radius: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
 
-    /* ===== Search + filter chips ===== */
-    .controls { padding: 0 12px 12px; max-width: 700px; margin: 0 auto; }
-    .search-box { width: 100%; padding: 12px 18px; border: none; border-radius: 24px; font-size: 15px; background: #fff; font-family: inherit; color: #111b21; margin-bottom: 10px; box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13); }
-    .search-box:focus { outline: none; box-shadow: 0 0 0 2px #00a884; }
-    .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+    /* Search & Filter Chips (WhatsApp Style) */
+    .controls {
+      background: #fff;
+      padding: 10px 14px 8px;
+      max-width: 700px;
+      margin: 0 auto;
+      border-bottom: 1px solid #e9edef;
+    }
+    .search-box {
+      width: 100%;
+      padding: 9px 14px;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      background: #f0f2f5;
+      color: #111b21;
+      margin-bottom: 10px;
+    }
+    .search-box:focus { outline: none; background: #e9edef; }
+    .filters {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
     .filters::-webkit-scrollbar { display: none; }
-    .filter-btn { padding: 7px 15px; border: 1px solid #e9edef; background: #fff; border-radius: 18px; font-size: 13px; font-weight: 500; color: #54656f; cursor: pointer; white-space: nowrap; font-family: inherit; }
-    .filter-btn.active { background: #d9fdd3; color: #005c4b; border-color: #d9fdd3; }
+    .filter-btn {
+      padding: 6px 14px;
+      border: none;
+      background: #f0f2f5;
+      border-radius: 18px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #54656f;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .filter-btn.active {
+      background: #d9fdd3;
+      color: #008069;
+      font-weight: 600;
+    }
 
-    /* ===== Orders as chat bubbles ===== */
-    #ordersContainer { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 0 12px 20px; max-width: 700px; margin: 0 auto; }
-    .order-card { background: #fff; border-radius: 0 12px 12px 12px; padding: 12px 14px; box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13); border-left: 4px solid #f5a623; font-size: 13px; display: flex; flex-direction: column; justify-content: space-between; }
-    .order-card.Paid { border-left-color: #00a884; background: #d9fdd3; }
-    .order-card.Failed { border-left-color: #ea0038; }
-    .order-card.OutforDelivery { border-left-color: #027eb5; }
-    .order-card.Delivered { border-left-color: #075e54; }
-    .order-card .ref { font-size: 11px; color: #667781; font-family: inherit; margin-bottom: 6px; }
-    .order-card .customer { font-size: 15px; font-weight: 600; color: #008069; margin-bottom: 4px; font-family: inherit; }
-    .order-card .row { margin-bottom: 4px; line-height: 1.45; color: #3b4a54; font-family: inherit; }
-    .order-card .row b { color: #111b21; }
-    .order-card .divider { height: 1px; background: rgba(11, 20, 26, 0.09); margin: 8px 0; }
+    /* Vertical WhatsApp Chat List */
+    #ordersContainer {
+      display: flex;
+      flex-direction: column;
+      max-width: 700px;
+      margin: 0 auto;
+      background: #fff;
+    }
+    .chat-row {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f2f5;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .chat-row:active { background: #f5f6f6; }
+    .chat-row.selected { background: #e7fce3; }
 
-    .status { display: inline-block; padding: 3px 11px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; font-family: inherit; }
-    .status.Pending { background-color: #d98a00; }
-    .status.Paid { background-color: #00a884; }
-    .status.Failed { background-color: #ea0038; }
-    .status.OutforDelivery { background-color: #027eb5; }
-    .status.Delivered { background-color: #075e54; }
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #dfe5e7;
+      color: #54656f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 17px;
+      flex-shrink: 0;
+      margin-right: 14px;
+      position: relative;
+    }
+    .chat-row.selected .avatar {
+      background: #008069;
+      color: #fff;
+    }
+    .check-badge {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 20px;
+      height: 20px;
+      background: #25d366;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 12px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #fff;
+    }
+    .chat-row.selected .check-badge { display: flex; }
 
-    .map-link { display: inline-block; background: #027eb5; color: #fff !important; text-decoration: none; padding: 6px 12px; border-radius: 14px; font-size: 12px; font-weight: 600; margin-top: 4px; font-family: inherit; }
+    .chat-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .chat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+    .chat-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111b21;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chat-time {
+      font-size: 11px;
+      color: #667781;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .chat-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .chat-preview {
+      font-size: 13px;
+      color: #667781;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-pill {
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+    .status-pill.Pending { background: #d97706; }
+    .status-pill.Paid { background: #25d366; color: #064e3b; }
+    .status-pill.Failed { background: #dc2626; }
+    .status-pill.OutforDelivery { background: #0284c7; }
+    .status-pill.Delivered { background: #6b7280; }
 
-    .action-buttons { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-    .action-buttons button { padding: 10px 12px; border: none; border-radius: 20px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%; font-family: inherit; transition: 0.2s; }
-    .action-buttons button:hover { opacity: 0.9; }
-    .btn-whatsapp { background: #00a884; }
-    .btn-out { background: #027eb5; }
-    .btn-deliver { background: #075e54; }
-    .btn-delete { background: #ea0038; }
-    .no-orders { text-align: center; grid-column: 1 / -1; padding: 40px; color: #667781; background: #fff; border-radius: 12px; font-family: inherit; }
-    @media (min-width: 640px) { #ordersContainer { grid-template-columns: 1fr 1fr; } }
+    .no-orders {
+      text-align: center;
+      padding: 40px 20px;
+      color: #667781;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    /* Full-Screen WhatsApp Message Thread View */
+    .chat-modal {
+      position: fixed;
+      inset: 0;
+      background: #efeae2;
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      max-width: 700px;
+      margin: 0 auto;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    }
+    .chat-modal.open { display: flex; }
+
+    .chat-modal-header {
+      background: #008069;
+      color: #fff;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .back-btn {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+      padding: 4px 8px 4px 0;
+    }
+    .chat-modal-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .chat-modal-user { flex: 1; min-width: 0; }
+    .chat-modal-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-modal-sub { font-size: 12px; opacity: 0.85; }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .date-chip {
+      align-self: center;
+      background: #fff;
+      color: #54656f;
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+      margin-bottom: 4px;
+    }
+    .bubble {
+      max-width: 85%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.45;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .bubble.incoming {
+      background: #fff;
+      align-self: flex-start;
+      border-top-left-radius: 0;
+    }
+    .bubble.outgoing {
+      background: #d9fdd3;
+      align-self: flex-end;
+      border-top-right-radius: 0;
+    }
+    .bubble-time {
+      font-size: 10px;
+      color: #667781;
+      text-align: right;
+      margin-top: 4px;
+    }
+    .map-link {
+      display: inline-block;
+      background: #008069;
+      color: #fff !important;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    /* Bottom WhatsApp Action Tray inside Message View */
+    .chat-footer {
+      background: #f0f2f5;
+      padding: 10px 12px 16px;
+      border-top: 1px solid #d1d7db;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .footer-label {
+      font-size: 11px;
+      color: #667781;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .action-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .action-row.two-col {
+      grid-template-columns: 1fr 1fr;
+    }
+    .wa-btn {
+      padding: 9px 6px;
+      border: none;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      color: #fff;
+      width: 100%;
+    }
+    .btn-whatsapp { background: #25d366; color: #064e3b; }
+    .btn-out { background: #0284c7; }
+    .btn-deliver { background: #008069; }
+    .btn-delete-single { background: #dc2626; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="header-title">Columbus <span>Admin</span></div>
-    <div class="header-actions">
+
+  <!-- Main Header (Switches to Selection Toolbar on Long Press) -->
+  <div class="header" id="mainHeader">
+    <div class="header-title" id="headerTitle">Columbus Delivery</div>
+    <div class="header-actions" id="normalActions">
       <span class="status-badge"><span class="live-dot"></span>Live</span>
       <a href="/settings.html" class="btn-icon">⚙️</a>
       <button class="btn-icon" onclick="logout()">Logout</button>
     </div>
-  </div>
-
-  <div class="stats">
-    <div class="stat-card"><div class="num" id="statToday">0</div><div class="lbl">Orders Today</div></div>
-    <div class="stat-card orange"><div class="num" id="statPending">0</div><div class="lbl">Pending</div></div>
-    <div class="stat-card green"><div class="num" id="statRevenue">KES 0</div><div class="lbl">Today Fees</div></div>
-    <div class="stat-card blue"><div class="num" id="statVisits">0</div><div class="lbl">👀 Visitors Today</div></div>
-  </div>
-
-  <div class="manage-items">
-    <h3>🖼️ Manage Homepage Items (Max 5)</h3>
-    <div style="font-size: 12px; color: #666; margin-bottom: 15px; font-family: Arial, sans-serif;">
-      Paste an image link (URL) from Google Images, Imgur, or any website. The preview will show below.
+    <div class="header-actions" id="selectionActions" style="display:none;">
+      <button class="btn-icon" onclick="deleteSelectedOrders()" style="font-size:16px;">🗑️ Delete</button>
+      <button class="btn-icon" onclick="exitSelectionMode()">✕ Cancel</button>
     </div>
-    <div id="featuredItemsContainer"></div>
-    <button class="btn-save-items" onclick="saveFeaturedItems()">Save Homepage Items</button>
-    <div id="saveStatus" style="text-align:center; font-size:12px; color:green; margin-top:8px; font-weight:bold;"></div>
   </div>
 
+  <!-- Compact Stats -->
+  <div class="stats">
+    <div class="stat-card"><div class="num" id="statToday">0</div><div class="lbl">Today</div></div>
+    <div class="stat-card orange"><div class="num" id="statPending">0</div><div class="lbl">Pending</div></div>
+    <div class="stat-card green"><div class="num" id="statRevenue">KES 0</div><div class="lbl">Fees</div></div>
+    <div class="stat-card blue"><div class="num" id="statVisits">0</div><div class="lbl">Visitors</div></div>
+  </div>
+
+  <!-- Collapsible Homepage Items -->
+  <div class="manage-items-wrapper">
+    <button class="manage-toggle" onclick="toggleManageItems()">
+      <span>🖼️ Manage Homepage Items (Max 5)</span>
+      <span id="manageChevron">▼</span>
+    </button>
+    <div class="manage-items" id="manageItemsBody">
+      <div style="font-size: 12px; color: #667781; margin-bottom: 12px;">
+        Paste an image link (URL) from Google Images, Imgur, or any website.
+      </div>
+      <div id="featuredItemsContainer"></div>
+      <button class="btn-save-items" onclick="saveFeaturedItems()">Save Homepage Items</button>
+      <div id="saveStatus" style="text-align:center; font-size:12px; color:green; margin-top:8px; font-weight:bold;"></div>
+    </div>
+  </div>
+
+  <!-- Search & Status Chips -->
   <div class="controls">
-    <input type="text" class="search-box" id="searchBox" placeholder="Search by name, phone, shop..." oninput="applyFilters()">
+    <input type="text" class="search-box" id="searchBox" placeholder="Search orders by name, phone, hostel..." oninput="applyFilters()">
     <div class="filters">
       <button class="filter-btn active" data-filter="All" onclick="setFilter(this)">All</button>
       <button class="filter-btn" data-filter="Pending" onclick="setFilter(this)">Pending</button>
@@ -120,7 +513,27 @@
     </div>
   </div>
 
-  <div id="ordersContainer">Loading orders...</div>
+  <!-- Vertical WhatsApp Chat List -->
+  <div id="ordersContainer">
+    <div class="no-orders">Loading orders...</div>
+  </div>
+
+  <!-- Full-Screen WhatsApp Message Detail View -->
+  <div class="chat-modal" id="chatModal">
+    <div class="chat-modal-header">
+      <button class="back-btn" onclick="closeOrderChat()">←</button>
+      <div class="chat-modal-avatar" id="modalAvatar">C</div>
+      <div class="chat-modal-user">
+        <div class="chat-modal-name" id="modalName">Customer</div>
+        <div class="chat-modal-sub" id="modalPhone">Phone</div>
+      </div>
+      <button class="btn-icon" onclick="deleteActiveOrder()" title="Delete Order">🗑️</button>
+    </div>
+
+    <div class="chat-messages" id="modalMessages"></div>
+
+    <div class="chat-footer" id="modalFooter"></div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -128,6 +541,17 @@
     const container = document.getElementById('ordersContainer');
     let allOrders = [];
     let currentFilter = 'All';
+    let selectedOrderIds = new Set();
+    let activeOrderId = null;
+    let pressTimer = null;
+    let longPressTriggered = false;
+
+    function toggleManageItems() {
+      const body = document.getElementById('manageItemsBody');
+      const chev = document.getElementById('manageChevron');
+      body.classList.toggle('open');
+      chev.innerText = body.classList.contains('open') ? '▲' : '▼';
+    }
 
     // --- FEATURED ITEMS & URL LOGIC ---
     async function loadFeaturedItems() {
@@ -139,16 +563,14 @@
         let items = data.settings?.featuredItems || [];
         while (items.length < 5) items.push({ imageUrl: '', name: '' });
 
-        const container = document.getElementById('featuredItemsContainer');
-        container.innerHTML = '';
+        const fContainer = document.getElementById('featuredItemsContainer');
+        fContainer.innerHTML = '';
         
         items.slice(0, 5).forEach((item, i) => {
-          container.innerHTML += `
+          fContainer.innerHTML += `
             <div class="item-input-row">
               <input type="text" id="itemName${i}" placeholder="Item Name (e.g. Chapati)" value="${item.name || ''}">
-              
               <input type="text" id="itemImgUrl${i}" placeholder="Paste Image URL here (https://...)" value="${item.imageUrl || ''}" oninput="updatePreview(${i})">
-              
               <img id="preview${i}" src="${item.imageUrl || ''}" class="img-preview" style="${item.imageUrl ? 'display:block;' : ''}" onerror="this.style.display='none'">
             </div>
           `;
@@ -156,7 +578,6 @@
       } catch (e) { console.error(e); }
     }
 
-    // Live preview when pasting a URL
     function updatePreview(index) {
       const url = document.getElementById(`itemImgUrl${index}`).value.trim();
       const preview = document.getElementById(`preview${index}`);
@@ -171,7 +592,7 @@
     async function saveFeaturedItems() {
       const status = document.getElementById('saveStatus');
       status.innerText = "Saving...";
-      status.style.color = "blue";
+      status.style.color = "#008069";
 
       const newItems = [];
       for (let i = 0; i < 5; i++) {
@@ -191,7 +612,7 @@
         
         if (!res.ok) throw new Error("Failed to save to database");
 
-        status.innerText = "✅ Saved successfully! Open homepage to see changes.";
+        status.innerText = "✅ Saved successfully!";
         status.style.color = "green";
         setTimeout(() => status.innerText = "", 4000);
         
@@ -229,8 +650,17 @@
         const response = await fetch('/api/orders');
         if (handleAuthError(response)) return;
         const data = await response.json();
-        if (data.success) { allOrders = data.orders; updateStats(); applyFilters(); }
-      } catch (error) { container.innerHTML = "<p class='no-orders'>Network error.</p>"; }
+        if (data.success) {
+          allOrders = data.orders;
+          updateStats();
+          applyFilters();
+          if (activeOrderId) {
+            const refreshed = allOrders.find(o => o._id === activeOrderId);
+            if (refreshed) openOrderChat(refreshed);
+            else closeOrderChat();
+          }
+        }
+      } catch (error) { container.innerHTML = "<div class='no-orders'>Network error.</div>"; }
     }
 
     function updateStats() {
@@ -259,67 +689,238 @@
 
     function setFilter(btn) {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active'); currentFilter = btn.dataset.filter; applyFilters();
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      applyFilters();
     }
 
     function applyFilters() {
       const search = document.getElementById('searchBox').value.toLowerCase().trim();
       container.innerHTML = '';
       const filtered = allOrders.filter(o => {
-        if (currentFilter !== 'All' && o.status !== currentFilter) return false;
+        const normalizedStatus = (o.status || 'Pending').replace(/\s/g, '');
+        if (currentFilter !== 'All' && normalizedStatus !== currentFilter && o.status !== currentFilter) return false;
         if (search) {
-          return (o.customerName||'').toLowerCase().includes(search) || 
-                 (o.phone||'').toLowerCase().includes(search) || 
-                 (o.shopName||'').toLowerCase().includes(search);
+          return (o.customerName || '').toLowerCase().includes(search) || 
+                 (o.phone || '').toLowerCase().includes(search) || 
+                 (o.shopName || '').toLowerCase().includes(search) ||
+                 (o.hostel || '').toLowerCase().includes(search) ||
+                 (o.itemDescription || '').toLowerCase().includes(search);
         }
         return true;
       });
-      if (filtered.length === 0) { container.innerHTML = "<p class='no-orders'>No orders match your filter.</p>"; return; }
-      filtered.forEach(order => renderOrder(order));
+      if (filtered.length === 0) {
+        container.innerHTML = "<div class='no-orders'>No orders match your filter.</div>";
+        return;
+      }
+      filtered.forEach(order => renderOrderRow(order));
     }
 
-    function renderOrder(order) {
+    function getInitials(name) {
+      return (name || '?').trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    }
+
+    function renderOrderRow(order) {
       const statusClass = (order.status || 'Pending').replace(/\s/g, '');
+      const isSelected = selectedOrderIds.has(order._id);
+      const timeStr = new Date(order.createdAt).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' });
+
+      const row = document.createElement('div');
+      row.className = `chat-row ${isSelected ? 'selected' : ''}`;
+      row.id = `order-${order._id}`;
+
+      row.innerHTML = `
+        <div class="avatar">
+          ${getInitials(order.customerName)}
+          <span class="check-badge">✓</span>
+        </div>
+        <div class="chat-info">
+          <div class="chat-top">
+            <div class="chat-name">${order.customerName}</div>
+            <div class="chat-time">${timeStr}</div>
+          </div>
+          <div class="chat-bottom">
+            <div class="chat-preview">📦 ${order.itemDescription} • KES ${order.goodsAmount}</div>
+            <span class="status-pill ${statusClass}">${order.status}</span>
+          </div>
+        </div>
+      `;
+
+      // Long-press handlers (Touch & Mouse)
+      const startPress = () => {
+        longPressTriggered = false;
+        pressTimer = setTimeout(() => {
+          longPressTriggered = true;
+          toggleSelectOrder(order._id);
+          if (navigator.vibrate) navigator.vibrate(40);
+        }, 500);
+      };
+
+      const cancelPress = () => {
+        clearTimeout(pressTimer);
+      };
+
+      row.addEventListener('touchstart', startPress, { passive: true });
+      row.addEventListener('touchend', cancelPress);
+      row.addEventListener('touchmove', cancelPress);
+      row.addEventListener('mousedown', (e) => { if (e.button === 0) startPress(); });
+      row.addEventListener('mouseup', cancelPress);
+      row.addEventListener('mouseleave', cancelPress);
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        toggleSelectOrder(order._id);
+      });
+
+      // Tap handler: Select if already in selection mode, otherwise open like WhatsApp chat
+      row.addEventListener('click', () => {
+        if (longPressTriggered) {
+          longPressTriggered = false;
+          return;
+        }
+        if (selectedOrderIds.size > 0) {
+          toggleSelectOrder(order._id);
+        } else {
+          openOrderChat(order);
+        }
+      });
+
+      container.appendChild(row);
+    }
+
+    // --- LONG PRESS SELECTION & DELETE ---
+    function toggleSelectOrder(orderId) {
+      if (selectedOrderIds.has(orderId)) {
+        selectedOrderIds.delete(orderId);
+      } else {
+        selectedOrderIds.add(orderId);
+      }
+      updateSelectionUI();
+      applyFilters();
+    }
+
+    function exitSelectionMode() {
+      selectedOrderIds.clear();
+      updateSelectionUI();
+      applyFilters();
+    }
+
+    function updateSelectionUI() {
+      const header = document.getElementById('mainHeader');
+      const title = document.getElementById('headerTitle');
+      const normalActions = document.getElementById('normalActions');
+      const selectionActions = document.getElementById('selectionActions');
+
+      if (selectedOrderIds.size > 0) {
+        header.classList.add('selection-mode');
+        title.innerText = `${selectedOrderIds.size} selected`;
+        normalActions.style.display = 'none';
+        selectionActions.style.display = 'flex';
+      } else {
+        header.classList.remove('selection-mode');
+        title.innerText = 'Columbus Delivery';
+        normalActions.style.display = 'flex';
+        selectionActions.style.display = 'none';
+      }
+    }
+
+    async function deleteSelectedOrders() {
+      const count = selectedOrderIds.size;
+      if (count === 0) return;
+      if (!confirm(`Delete ${count} selected order(s) permanently?`)) return;
+
+      const ids = Array.from(selectedOrderIds);
+      for (const orderId of ids) {
+        try {
+          const response = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+          if (handleAuthError(response)) return;
+          const data = await response.json();
+          if (data.success) {
+            allOrders = allOrders.filter(o => o._id !== orderId);
+            selectedOrderIds.delete(orderId);
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+      updateSelectionUI();
+      updateStats();
+      applyFilters();
+    }
+
+    // --- WHATSAPP MESSAGE DETAIL VIEW ---
+    function openOrderChat(order) {
+      activeOrderId = order._id;
+      const ref = order._id.slice(-6).toUpperCase();
       const waPhone = formatPhoneForWhatsApp(order.phone);
+      const dateStr = new Date(order.createdAt).toLocaleString('en-KE', {
+        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+      });
+
+      document.getElementById('modalAvatar').innerText = getInitials(order.customerName);
+      document.getElementById('modalName').innerText = order.customerName;
+      document.getElementById('modalPhone').innerText = `${order.phone} • Order #${ref}`;
+
       let mapLink = '';
-      if (order.latitude && order.longitude) mapLink = `<a class="map-link" target="_blank" href="https://www.google.com/maps?q=${order.latitude},${order.longitude}">📍 Open Map</a>`;
-      
+      if (order.latitude && order.longitude) {
+        mapLink = `<br><a class="map-link" target="_blank" href="https://www.google.com/maps?q=${order.latitude},${order.longitude}">📍 Open Customer Location</a>`;
+      }
+
+      document.getElementById('modalMessages').innerHTML = `
+        <div class="date-chip">${dateStr}</div>
+        <div class="bubble incoming">
+          <strong>New Order #${ref}</strong><br><br>
+          📦 <b>Item:</b> ${order.itemDescription}<br>
+          🏠 <b>Dropoff:</b> ${order.hostel}, Room ${order.room}<br>
+          📞 <b>Phone:</b> ${order.phone}
+          ${mapLink}
+          <div class="bubble-time">${dateStr}</div>
+        </div>
+        <div class="bubble outgoing">
+          💰 <b>Goods Amount:</b> KES ${order.goodsAmount}<br>
+          🚚 <b>Delivery Fee:</b> KES ${order.deliveryFee}<br>
+          📌 <b>Current Status:</b> ${order.status}
+          <div class="bubble-time">✓✓</div>
+        </div>
+      `;
+
       const waConfirm = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'confirm'))}`;
       const waOut = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'out'))}`;
       const waDeliv = `https://wa.me/${waPhone}?text=${encodeURIComponent(buildWhatsAppMessage(order, 'delivered'))}`;
-      const ref = order._id.slice(-6).toUpperCase();
-      
-      const card = document.createElement('div');
-      card.className = `order-card ${statusClass}`;
-      card.id = `order-${order._id}`;
-      card.innerHTML = `
-        <div>
-          <div class="ref">Order #${ref} • ${new Date(order.createdAt).toLocaleString('en-KE', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
-          <div class="customer">${order.customerName}</div>
-          <div class="row">📞 ${order.phone}</div>
-          <div class="row">🏠 ${order.hostel}, Room ${order.room}</div>
-          ${mapLink ? `<div class="row">${mapLink}</div>` : ''}
-          <div class="divider"></div>
-          <div class="row">📦 ${order.itemDescription}</div>
-          <div class="row">💰 Goods: <b>KES ${order.goodsAmount}</b></div>
-          <div class="row">🚚 Fee: KES ${order.deliveryFee}</div>
-          <div class="row" style="margin-top:8px;"><span class="status ${statusClass}">${order.status}</span></div>
+
+      document.getElementById('modalFooter').innerHTML = `
+        <div class="footer-label">Send WhatsApp Message</div>
+        <div class="action-row">
+          <a href="${waConfirm}" target="_blank" style="text-decoration:none;"><button class="wa-btn btn-whatsapp">📱 Confirm</button></a>
+          <a href="${waOut}" target="_blank" style="text-decoration:none;"><button class="wa-btn btn-whatsapp">🛵 Out</button></a>
+          <a href="${waDeliv}" target="_blank" style="text-decoration:none;"><button class="wa-btn btn-whatsapp">✅ Delivered</button></a>
         </div>
-        <div class="action-buttons">
-          <a href="${waConfirm}" target="_blank" style="text-decoration:none;"><button class="btn-whatsapp">📱 Confirm</button></a>
-          <a href="${waOut}" target="_blank" style="text-decoration:none;"><button class="btn-whatsapp">🛵 Out for Delivery</button></a>
-          <a href="${waDeliv}" target="_blank" style="text-decoration:none;"><button class="btn-whatsapp">✅ Delivered</button></a>
-          <button class="btn-out" onclick="updateStatus('${order._id}', 'Out for Delivery')">🚚 Mark: Out</button>
-          <button class="btn-deliver" onclick="updateStatus('${order._id}', 'Delivered')">✅ Mark: Delivered</button>
-          <button class="btn-delete" onclick="deleteOrder('${order._id}')">🗑️ Delete</button>
+        <div class="footer-label" style="margin-top:4px;">Update Order Status</div>
+        <div class="action-row two-col">
+          <button class="wa-btn btn-out" onclick="updateStatus('${order._id}', 'Out for Delivery')">🚚 Mark: Out</button>
+          <button class="wa-btn btn-deliver" onclick="updateStatus('${order._id}', 'Delivered')">✅ Mark: Delivered</button>
         </div>
       `;
-      container.appendChild(card);
+
+      document.getElementById('chatModal').classList.add('open');
+    }
+
+    function closeOrderChat() {
+      activeOrderId = null;
+      document.getElementById('chatModal').classList.remove('open');
+    }
+
+    async function deleteActiveOrder() {
+      if (!activeOrderId) return;
+      await deleteOrder(activeOrderId);
     }
 
     async function updateStatus(orderId, newStatus) {
       try {
-        const response = await fetch(`/api/orders/${orderId}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+        const response = await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
         if (handleAuthError(response)) return;
       } catch (error) { alert("Failed to update status."); }
     }
@@ -330,7 +931,12 @@
         const response = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
         if (handleAuthError(response)) return;
         const data = await response.json();
-        if (data.success) { allOrders = allOrders.filter(o => o._id !== orderId); document.getElementById(`order-${orderId}`).remove(); updateStats(); }
+        if (data.success) {
+          allOrders = allOrders.filter(o => o._id !== orderId);
+          if (activeOrderId === orderId) closeOrderChat();
+          updateStats();
+          applyFilters();
+        }
       } catch (error) { alert("Network error."); }
     }
 
@@ -339,14 +945,28 @@
       try { await fetch('/api/logout', { method: 'POST' }); } finally { window.location.href = '/login.html'; }
     }
 
-    socket.on('new-order', (order) => { allOrders.unshift(order); updateStats(); applyFilters(); loadVisits(); });
+    socket.on('new-order', (order) => {
+      allOrders.unshift(order);
+      updateStats();
+      applyFilters();
+      loadVisits();
+    });
+
     socket.on('order-updated', (updatedOrder) => {
       const idx = allOrders.findIndex(o => o._id === updatedOrder._id);
       if (idx !== -1) allOrders[idx] = updatedOrder;
-      updateStats(); applyFilters();
+      updateStats();
+      applyFilters();
+      if (activeOrderId === updatedOrder._id) openOrderChat(updatedOrder);
     });
+
     socket.on('order-deleted', (orderId) => {
-      allOrders = allOrders.filter(o => o._id !== orderId); updateStats(); applyFilters();
+      allOrders = allOrders.filter(o => o._id !== orderId);
+      selectedOrderIds.delete(orderId);
+      updateSelectionUI();
+      if (activeOrderId === orderId) closeOrderChat();
+      updateStats();
+      applyFilters();
     });
 
     loadOrders(); loadVisits(); loadFeaturedItems();
