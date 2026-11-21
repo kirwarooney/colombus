@@ -8,13 +8,14 @@ const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
 const session = require('express-session');
+const { Expo } = require('expo-server-sdk'); 
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+const expo = new Expo(); 
 
 app.use(cors());
-// 👇 THIS IS THE MOST CRITICAL LINE TO STOP UPLOAD FAILURES
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -170,6 +171,33 @@ app.post('/api/pay', async (req, res) => {
         await newOrder.save();
         io.emit('new-order', newOrder);
 
+        // ==========================================
+        // 📲 SEND PUSH NOTIFICATION TO ADMIN APP
+        // ==========================================
+        const ADMIN_PUSH_TOKEN = 'ExponentPushToken[zRl0_RD6mk50GU-nplIW5f]'; 
+        
+        if (Expo.isExpoPushToken(ADMIN_PUSH_TOKEN)) {
+            const messages = [{
+                to: ADMIN_PUSH_TOKEN,
+                sound: 'default',
+                title: '🚨 NEW ORDER RECEIVED!',
+                body: `Customer: ${orderDetails.customerName}\nItem: ${orderDetails.itemDescription}\nPhone: ${orderDetails.phone}`,
+                data: { orderId: newOrder._id },
+                priority: 'high', 
+                channelId: 'orders' 
+            }];
+
+            try {
+                await expo.sendPushNotificationsAsync(messages);
+                console.log('📲 Admin notification sent successfully!');
+            } catch (error) {
+                console.error('Error sending push notification:', error);
+            }
+        } else {
+            console.log('⚠️ Invalid Expo push token format.');
+        }
+        // ==========================================
+
         const token = await getMpesaAccessToken();
         const date = new Date();
         const timestamp = date.getFullYear() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2) + ("0" + date.getHours()).slice(-2) + ("0" + date.getMinutes()).slice(-2) + ("0" + date.getSeconds()).slice(-2);
@@ -225,10 +253,10 @@ app.post('/api/callback', async (req, res) => {
         
         if (resultCode === 0) {
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true });
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { returnDocument: 'after' });
             if (updatedOrder) io.emit('order-updated', updatedOrder);
         } else {
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { new: true });
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { returnDocument: 'after' });
             if (updatedOrder) io.emit('order-updated', updatedOrder);
         }
     } catch (error) { console.error("Callback error:", error.message); }
@@ -272,7 +300,6 @@ app.get('/api/settings', requireAuth, async (req, res) => {
 app.put('/api/settings', requireAuth, async (req, res) => {
     try {
         const { businessName, deliveryFee, contactPhone, footerMessage, featuredItems } = req.body;
-        console.log(`⚙️ Received settings update. Items count: ${featuredItems ? featuredItems.length : 0}`);
         
         const updateData = {};
         if (businessName !== undefined) updateData.businessName = businessName;
@@ -284,7 +311,7 @@ app.put('/api/settings', requireAuth, async (req, res) => {
         const settings = await Settings.findOneAndUpdate(
             {},
             updateData,
-            { new: true, upsert: true }
+            { returnDocument: 'after', upsert: true }
         );
         res.json({ success: true, settings });
     } catch (error) { 
@@ -329,7 +356,7 @@ app.get('/api/orders', requireAuth, async (req, res) => {
 
 app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
     try {
-        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { returnDocument: 'after' });
         if (!updatedOrder) return res.status(404).json({ success: false });
         io.emit('order-updated', updatedOrder);
         res.json({ success: true, order: updatedOrder });
