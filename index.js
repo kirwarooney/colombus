@@ -8,15 +8,14 @@ const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
 const session = require('express-session');
-const { Expo } = require('expo-server-sdk'); // NEW: Push Notifications
+const { Expo } = require('expo-server-sdk'); 
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
-const expo = new Expo(); // NEW: Initialize Expo
+const expo = new Expo(); 
 
 app.use(cors());
-// Increased limits to allow base64 image uploads if needed
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -170,14 +169,11 @@ app.post('/api/pay', async (req, res) => {
             status: 'Pending', paymentMethod: 'daraja'
         });
         await newOrder.save();
-        
-        // WebSocket update for Web Dashboard
         io.emit('new-order', newOrder);
 
         // ==========================================
         // 📲 SEND PUSH NOTIFICATION TO ADMIN APP
         // ==========================================
-        // ⚠️ REPLACE THIS WITH YOUR ACTUAL TOKEN FROM THE ADMIN APP
         const ADMIN_PUSH_TOKEN = 'ExponentPushToken[YOUR_TOKEN_HERE]'; 
         
         if (Expo.isExpoPushToken(ADMIN_PUSH_TOKEN)) {
@@ -188,7 +184,7 @@ app.post('/api/pay', async (req, res) => {
                 body: `Customer: ${orderDetails.customerName}\nItem: ${orderDetails.itemDescription}\nPhone: ${orderDetails.phone}`,
                 data: { orderId: newOrder._id },
                 priority: 'high', 
-                channelId: 'orders' // Must match the channel created in the Admin App
+                channelId: 'orders' 
             }];
 
             try {
@@ -197,8 +193,6 @@ app.post('/api/pay', async (req, res) => {
             } catch (error) {
                 console.error('Error sending push notification:', error);
             }
-        } else {
-            console.log('⚠️ Invalid Expo push token. Notification not sent.');
         }
         // ==========================================
 
@@ -257,10 +251,10 @@ app.post('/api/callback', async (req, res) => {
         
         if (resultCode === 0) {
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { new: true });
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { returnDocument: 'after' });
             if (updatedOrder) io.emit('order-updated', updatedOrder);
         } else {
-            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { new: true });
+            const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { returnDocument: 'after' });
             if (updatedOrder) io.emit('order-updated', updatedOrder);
         }
     } catch (error) { console.error("Callback error:", error.message); }
@@ -315,7 +309,7 @@ app.put('/api/settings', requireAuth, async (req, res) => {
         const settings = await Settings.findOneAndUpdate(
             {},
             updateData,
-            { new: true, upsert: true }
+            { returnDocument: 'after', upsert: true }
         );
         res.json({ success: true, settings });
     } catch (error) { 
@@ -360,7 +354,7 @@ app.get('/api/orders', requireAuth, async (req, res) => {
 
 app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
     try {
-        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+        const updatedOrder = await Order.findByIdAndUpdate(req.params.id, { status: req.body.status }, { returnDocument: 'after' });
         if (!updatedOrder) return res.status(404).json({ success: false });
         io.emit('order-updated', updatedOrder);
         res.json({ success: true, order: updatedOrder });
