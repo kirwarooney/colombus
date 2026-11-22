@@ -174,7 +174,7 @@ app.post('/api/pay', async (req, res) => {
         // ==========================================
         // 📲 SEND PUSH NOTIFICATION TO ADMIN APP
         // ==========================================
-        const ADMIN_PUSH_TOKEN = 'ExponentPushToken[U263jAFqxFUl7yHNIl-jLK]';
+        const ADMIN_PUSH_TOKEN = 'ExponentPushToken[zRl0_RD6mk50GU-nplIW5f]'; 
         
         if (Expo.isExpoPushToken(ADMIN_PUSH_TOKEN)) {
             const messages = [{
@@ -184,7 +184,7 @@ app.post('/api/pay', async (req, res) => {
                 body: `Customer: ${orderDetails.customerName}\nItem: ${orderDetails.itemDescription}\nPhone: ${orderDetails.phone}`,
                 data: { orderId: newOrder._id },
                 priority: 'high', 
-                channelId: 'orders_v2' 
+                channelId: 'orders' 
             }];
 
             try {
