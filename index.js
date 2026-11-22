@@ -8,10 +8,12 @@ const mongoose = require('mongoose');
 const http = require('http');
 const { Server } = require('socket.io');
 const session = require('express-session');
+const { Expo } = require('expo-server-sdk'); 
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+const expo = new Expo(); 
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
@@ -131,31 +133,6 @@ io.on('connection', (socket) => {
 });
 
 // ================================
-// HELPER: SEND PUSH NOTIFICATION (USING AXIOS)
-// ================================
-async function sendAdminPush(title, body, orderId) {
-    const token = process.env.ADMIN_PUSH_TOKEN;
-    if (!token) return console.log("⚠️ No ADMIN_PUSH_TOKEN set in Render.");
-
-    try {
-        const response = await axios.post('https://exp.host/--/api/v2/push/send', {
-            to: token,
-            title: title,
-            body: body,
-            sound: 'default',
-            priority: 'high',
-            channelId: 'orders',
-            data: { orderId: orderId }
-        }, {
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
-        });
-        console.log('📲 Expo Push Response:', response.data);
-    } catch (error) {
-        console.error('❌ Error sending push notification:', error.message);
-    }
-}
-
-// ================================
 // M-PESA — PRODUCTION (LIVE)
 // ================================
 const MPESA_BASE = 'https://api.safaricom.co.ke';
@@ -197,11 +174,28 @@ app.post('/api/pay', async (req, res) => {
         // ==========================================
         // 📲 SEND PUSH NOTIFICATION TO ADMIN APP
         // ==========================================
-        await sendAdminPush(
-            '🚨 NEW ORDER RECEIVED!', 
-            `Customer: ${orderDetails.customerName}\nItem: ${orderDetails.itemDescription}\nPhone: ${orderDetails.phone}`,
-            newOrder._id
-        );
+        const ADMIN_PUSH_TOKEN = process.env.ADMIN_PUSH_TOKEN ? process.env.ADMIN_PUSH_TOKEN.trim() : 'ExponentPushToken[U263jAFqxFUl7yHNIl-jLK]'; 
+        
+        if (Expo.isExpoPushToken(ADMIN_PUSH_TOKEN)) {
+            const messages = [{
+                to: ADMIN_PUSH_TOKEN,
+                sound: 'default',
+                title: '🚨 NEW ORDER RECEIVED!',
+                body: `Customer: ${orderDetails.customerName}\nItem: ${orderDetails.itemDescription}\nPhone: ${orderDetails.phone || phone}`,
+                data: { orderId: newOrder._id },
+                priority: 'high', 
+                channelId: 'orders_v2' 
+            }];
+
+            try {
+                await expo.sendPushNotificationsAsync(messages);
+                console.log('📲 Admin notification sent successfully!');
+            } catch (error) {
+                console.error('Error sending push notification:', error);
+            }
+        } else {
+            console.log('⚠️ Invalid Expo push token format.');
+        }
         // ==========================================
 
         const token = await getMpesaAccessToken();
@@ -260,30 +254,10 @@ app.post('/api/callback', async (req, res) => {
         if (resultCode === 0) {
             const mpesaReceipt = callbackData.CallbackMetadata.Item.find(item => item.Name === "MpesaReceiptNumber").Value;
             const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Paid', mpesaReceipt }, { returnDocument: 'after' });
-            
-            if (updatedOrder) {
-                io.emit('order-updated', updatedOrder);
-                
-                // 📲 Notify Admin: Payment Success
-                await sendAdminPush(
-                    '✅ PAYMENT RECEIVED',
-                    `${updatedOrder.customerName} has paid KES ${updatedOrder.deliveryFee}. Order is ready!`,
-                    updatedOrder._id
-                );
-            }
+            if (updatedOrder) io.emit('order-updated', updatedOrder);
         } else {
             const updatedOrder = await Order.findOneAndUpdate({ checkoutRequestID }, { status: 'Failed' }, { returnDocument: 'after' });
-            
-            if (updatedOrder) {
-                io.emit('order-updated', updatedOrder);
-                
-                // 📲 Notify Admin: Payment Failed
-                await sendAdminPush(
-                    '❌ Payment Cancelled',
-                    `${updatedOrder.customerName} did not complete the M-Pesa payment.`,
-                    updatedOrder._id
-                );
-            }
+            if (updatedOrder) io.emit('order-updated', updatedOrder);
         }
     } catch (error) { console.error("Callback error:", error.message); }
     res.json({ ResultCode: 0, ResultDesc: "Success" });
